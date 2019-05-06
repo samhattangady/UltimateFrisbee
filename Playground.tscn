@@ -1,0 +1,37 @@
+[gd_scene load_steps=6 format=2]
+
+[ext_resource path="res://Ground.tscn" type="PackedScene" id=1]
+[ext_resource path="res://Cube.tscn" type="PackedScene" id=2]
+[ext_resource path="res://Ball.tscn" type="PackedScene" id=3]
+[ext_resource path="res://ThrowCanvas.tscn" type="PackedScene" id=4]
+[ext_resource path="res://Walls.tscn" type="PackedScene" id=5]
+
+[node name="Playground" type="Spatial"]
+
+[node name="Ground" parent="." instance=ExtResource( 1 )]
+editor/display_folded = false
+
+[node name="Cube" parent="." instance=ExtResource( 2 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0 )
+
+[node name="Ball" parent="." instance=ExtResource( 3 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 1.08638, 0.490365, 0 )
+
+[node name="Camera" type="Camera" parent="."]
+transform = Transform( 1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 8, 8 )
+
+[node name="ThrowCanvas" parent="." instance=ExtResource( 4 )]
+
+[node name="Walls" parent="." instance=ExtResource( 5 )]
+transform = Transform( 0.2, 0, 0, 0, 1, 0, 0, 0, 5, -5, 1, 0 )
+
+[node name="Walls2" parent="." instance=ExtResource( 5 )]
+transform = Transform( 0.2, 0, 0, 0, 1, 0, 0, 0, 5, 5, 1, 0 )
+
+[node name="Walls3" parent="." instance=ExtResource( 5 )]
+transform = Transform( -8.74228e-09, 0, 5, 0, 1, 0, -0.2, 0, -2.18557e-07, 0, 1, 5 )
+
+[node name="Walls4" parent="." instance=ExtResource( 5 )]
+transform = Transform( -8.74228e-09, 0, 5, 0, 1, 0, -0.2, 0, -2.18557e-07, 0, 1, -5 )
+
+[connection signal="throw" from="ThrowCanvas" to="Cube" method="_on_ThrowCanvas_throw"]
