@@ -1,0 +1,64 @@
+[gd_scene load_steps=8 format=2]
+
+[ext_resource path="res://Ground.tscn" type="PackedScene" id=1]
+[ext_resource path="res://ThrowCanvas.tscn" type="PackedScene" id=2]
+[ext_resource path="res://Disc.tscn" type="PackedScene" id=3]
+[ext_resource path="res://Disc.gd" type="Script" id=4]
+[ext_resource path="res://DebugLayer.gd" type="Script" id=5]
+
+[sub_resource type="Curve2D" id=1]
+_data = {
+"points": PoolVector2Array( -3.38782, 114.52, 3.38782, -114.52, 703.927, 288.445, 122.808, -50.296, -122.808, 50.296, 585.354, 222.674, 22.8678, -1.54757, -22.8678, 1.54757, 465.933, 289.219, -3.38782, 18.5708, 3.38782, -18.5708, 421.892, 231.96 )
+}
+
+[sub_resource type="Curve3D" id=2]
+_data = {
+"points": PoolVector3Array( 0, 0, 0, 0, 0, 0, 6.06983, 0.374939, -3.82249, 0, 0, 0, 0, 0, 0, 6.06983, 0.374939, -3.82249, 0, 0, 0, 0, 0, 0, 13.317, 9.06709, -10.4333, 0, 0, 0, 0, 0, 0, 10.1172, 0.706774, -14.8083 ),
+"tilts": PoolRealArray( 0, 0, 0, 0 )
+}
+
+[node name="Throws" type="Spatial"]
+
+[node name="Ground" parent="." instance=ExtResource( 1 )]
+transform = Transform( 20, 0, 0, 0, 0.1, 0, 0, 0, 50, 0, 0, -30.5 )
+
+[node name="ThrowCanvas" parent="." instance=ExtResource( 2 )]
+
+[node name="Path2D" type="Path2D" parent="ThrowCanvas"]
+position = Vector2( -13.6843, -1.54758 )
+scale = Vector2( 0.913607, 1 )
+curve = SubResource( 1 )
+
+[node name="Camera" type="Camera" parent="."]
+transform = Transform( 1, 0, 0, 0, 0.707106, 0.707106, 0, -0.707106, 0.707106, 0, 20, 10 )
+
+[node name="Path" type="Path" parent="."]
+curve = SubResource( 2 )
+
+[node name="PathFollow" type="PathFollow" parent="Path"]
+loop = false
+
+[node name="Disc" parent="Path/PathFollow" instance=ExtResource( 3 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0 )
+script = ExtResource( 4 )
+curve_in_y = -1.65
+curve_in_z = 5.9
+
+[node name="DebugLayer" type="Control" parent="."]
+margin_right = 40.0
+margin_bottom = 40.0
+script = ExtResource( 5 )
+
+[node name="Label" type="Label" parent="DebugLayer"]
+margin_top = -0.0524092
+margin_right = 40.0
+margin_bottom = 13.9476
+
+[node name="Line2D" type="Line2D" parent="DebugLayer"]
+default_color = Color( 0.694118, 0.694118, 0.694118, 0.52549 )
+texture_mode = -1
+
+[node name="DebugPaths" type="Spatial" parent="."]
+
+[connection signal="throw" from="ThrowCanvas" to="Path/PathFollow/Disc" method="_on_ThrowCanvas_throw"]
+[connection signal="position_update" from="Path/PathFollow/Disc" to="DebugLayer" method="_on_Disc_position_update"]
