@@ -1,46 +1,59 @@
 extends Node2D
 
-var circles = []
+var throw_path = []
 var mouse_down = false
+var is_throwing = false
+var is_panning = false
+var pan_start = Vector2(0, 0)
 signal throw(throw_data)
+signal pan_start()
+signal pan_camera(pan_start, pan_end, origin)
+
+var disc_points = Vector2(0, 0)
+var throw_radius = 100
+var throw_radius_buffer = 40
+var draw_throw_circle = true
 
 func _ready():
-	print(rotate_path_to_y_axis([Vector2(0,0), Vector2(2,1)]))
+	calculate_disc_points()
 
 func _input(event):
 	if event is InputEventMouseButton:
-		if event.is_pressed(): 
-			circles = []
+		if event.is_pressed():
+			throw_path = []
 			# TODO (08 May 2019 sam): Check if the user is clicking
 			# near the disc/player, and not just drawing randomly.
 			mouse_down = true
-		else: 
-			# TODO (06 May 2019 sam): Make sure there are
-			# atleast 3-4 points. Or calculate length of
-			# the path. Or some other kind of verification
+			var distance = event.position.distance_to(disc_points)
+			if distance < throw_radius:
+				is_throwing = true
+			elif distance > throw_radius+throw_radius_buffer:
+				is_panning = true
+				emit_signal("pan_start")
+				pan_start = event.position
+		else:
+			if is_throwing:
+				# TODO (06 May 2019 sam): Make sure there are
+				# atleast 3-4 points. Or calculate length of
+				# the path. Or some other kind of verification
+				var throw_data = identify_throw(throw_path)
+				emit_signal("throw", throw_data)
 			mouse_down = false
-			if len(circles) < 2:
-				return
-			#print('starting cubic regression')
-			# trimming to see if it improves performance
-#			var trimmed_circles = []
-#			if len(circles)>10:
-#				var step = floor(len(circles)/10)
-#				for i in range(0, len(circles), step):
-#					trimmed_circles.append(circles[i])
-#			else:
-#				trimmed_circles = circles
-			# circles=cubic_regression(trimmed_circles)
-			var throw_data = identify_throw(circles)
-			emit_signal("throw", throw_data)
-			circles = []
+			is_throwing = false
+			is_panning = false
+			throw_path = []
 	if mouse_down and event is InputEventMouseMotion:
-		circles.append(event.position)
+		if is_throwing:
+			throw_path.append(event.position)
+		elif is_panning:
+			emit_signal("pan_camera", pan_start, event.position, disc_points)
 	update()
 
 func _draw():
-	for i in range(len(circles)-1):
-		draw_line(circles[i], circles[i+1], Color.white, 10.0)
+	for i in range(len(throw_path)-1):
+		draw_line(throw_path[i], throw_path[i+1], Color.white, 10.0)
+	if draw_throw_circle:
+		draw_circle(disc_points, throw_radius, Color(1, 1, 1, 0.3))
 
 func identify_throw(path):
 	var rotated_path = rotate_path_to_y_axis(path)
@@ -60,11 +73,11 @@ func get_max_displacements(path):
 			maxx = point.x
 		if abs(point.y) > abs(maxy):
 			maxy = point.y
-	return { 
+	return {
 		'x': maxx,
 		'y': maxy,
 	}
-			
+
 func rotate_path_to_y_axis(path):
 	# Rotate the path to align end points along y axis
 	# This is useful to find max x and y displacement
@@ -73,7 +86,8 @@ func rotate_path_to_y_axis(path):
 	var y1 = path[0].y
 	var x2 = path.back().x
 	var y2 = path.back().y
-	var angle = atan((x2-x1)/(y2-y1))
+    var angle = atan((x2-x1)/(y2-y1))
+    # var angle = path[0].angle_to_point(path.back()) - PI/2
 	var rotated_path = []
 	for point in path:
 		rotated_path.append(rotate_around_point(point, angle, path[0]))
@@ -115,3 +129,15 @@ func distance_from_line(point, line):
 	var dy = y - y3
 	var dist = (dx*dx + dy*dy)  # **.5
 	return dist
+
+func calculate_disc_points():
+	# To make a throw, the user will have to start the stroke from
+	# 3/4 the way down the screen, and half way across. We will also
+	# give a pixel radius of ~100 or so pixels.
+	var screen = get_viewport().size
+	disc_points = Vector2(screen.x/2, screen.y*3/4)
+
+# TODO (13 May 2019 sam): Currently everything is configured to the Pixel
+# Once we get to a certain point, we will also have to try to figure out
+# how to handle different screen sizes etc.
+
