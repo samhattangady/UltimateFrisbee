@@ -30,6 +30,12 @@ transform = Transform( 100, 0, 0, 0, 0.1, 0, 0, 0, 100, 0, 0, -30.5 )
 
 [node name="Camera" type="Camera" parent="."]
 transform = Transform( 1, 0, 0, 0, 0.707106, 0.707106, 0, -0.707106, 0.707106, 0, 30, 15 )
+far = 511.8
+script = ExtResource( 5 )
+
+[node name="Camera2" type="Camera" parent="."]
+transform = Transform( 1, 0, 0, 0, 0.707106, 0.707106, 0, -0.707106, 0.707106, 0, 30, 15 )
+far = 511.8
 script = ExtResource( 5 )
 
 [node name="Path" type="Path" parent="."]
@@ -46,6 +52,7 @@ transform = Transform( 0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0, 0 )
 script = ExtResource( 7 )
 
 [node name="DebugLayer" type="Control" parent="."]
+editor/display_folded = true
 margin_right = 40.0
 margin_bottom = 40.0
 script = ExtResource( 8 )
@@ -64,10 +71,10 @@ margin_bottom = 200.0
 script = ExtResource( 10 )
 
 [node name="DebugPaths" type="Spatial" parent="."]
-
 [connection signal="pan_camera" from="ThrowCanvas" to="Camera" method="_on_ThrowCanvas_pan_camera"]
 [connection signal="pan_start" from="ThrowCanvas" to="Camera" method="_on_ThrowCanvas_pan_start"]
 [connection signal="throw" from="ThrowCanvas" to="Path/PathFollow/Disc" method="_on_ThrowCanvas_throw"]
 [connection signal="position_update" from="Path/PathFollow/Disc" to="Camera" method="_on_Disc_position_update"]
 [connection signal="position_update" from="Path/PathFollow/Disc" to="DebugLayer" method="_on_Disc_position_update"]
+[connection signal="throw_complete" from="Path/PathFollow/Disc" to="Camera" method="_on_Disc_throw_complete"]
 [connection signal="button_up" from="DebugLayer/Button" to="Player" method="_on_Button_button_up"]

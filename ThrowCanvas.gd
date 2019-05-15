@@ -87,11 +87,9 @@ func rotate_path_to_y_axis(path):
     # This is useful to find max x and y displacement
     # which we use to identify what kind of throw it is
     path = anchor_to_origin(path)
-    print("anchored path = ", path)
     var angle = path[0].angle_to_point(path.back()) - PI/2
     if rad2deg(angle) < -180:
         angle += 2*PI
-    print("angle = ", rad2deg(angle))
     var rotated_path = []
     for point in path:
         rotated_path.append(point.rotated(-angle))

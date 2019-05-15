@@ -4,11 +4,12 @@ var currently_thrown = false
 var playing = true
 var path_tracers = []
 var path_follow = PathFollow
+var path = Path
 var random = RandomNumberGenerator
 
 var previous_throw = {}
 
-export var max_throw_speed = 25.0
+export var max_throw_speed = 30.0
 export var min_throw_speed = 12.0
 
 export var max_throw_distance = 80.0
@@ -19,6 +20,8 @@ var total_throw_time = 0
 var current_max_speed = 0
 var current_min_speed = 0
 var offset_delta = 0
+
+var number_of_throws = 0
 
 # This is the amount of x distance a disc can curve by
 # relative to its total distance travelled (straight-line disp)
@@ -31,21 +34,27 @@ const X_DISP_FACTOR = 0.8
 
 const DEBUG = true
 signal position_update(position)
+signal throw_complete(position)
 
 func _ready():
     path_tracers = get_parent().get_parent().get_parent().get_node("DebugPaths")
     path_follow = get_parent()
+    path = get_parent().get_parent()
     random = RandomNumberGenerator.new()
+    emit_signal("throw_complete", path.translation)
 
 func _process(delta):
+    # translation = path_follow.translation - path.translation
     if DEBUG:
-        emit_signal("position_update", path_follow.translation+path_follow.get_parent().translation)
+        emit_signal("position_update", path_follow.translation)
     if currently_thrown and playing:
         update_offset(delta)
         if path_follow.unit_offset >= 1:
             currently_thrown = false
-#           path_follow.unit_offset = 0
-#           rotation = Vector3(0,0,0)
+            # FIXME (15 May 2019 sam): !TranslationError. See bottom
+            path.translation = path_follow.translation
+            path_follow.unit_offset = 0
+            emit_signal("throw_complete", path.translation)
 
 func _input(event):
     if event.is_action_pressed("ui_accept"):
@@ -62,7 +71,6 @@ func _input(event):
 
 func _on_ThrowCanvas_throw(throw):
     previous_throw = throw
-    print(throw)
     execute_throw(throw)
 
 func execute_throw(throw):
@@ -72,19 +80,20 @@ func execute_throw(throw):
     var curve = calculate_throw_curve(throw)
     var path = get_parent().get_parent()
     path.curve = curve
-    # trace_path(curve)
+    trace_path(curve)
     start_throw(curve)
 
 func start_throw(throw):
     currently_thrown = true
-    path_follow.unit_offset = 0
-    path_follow.rotation = Vector3(0,0,0)
+    # FIXME (15 May 2019 sam): !TranslationError. See bottom
+    if number_of_throws != 0:
+        translation = -path.translation
+    number_of_throws += 1
     var throw_distance = throw.get_point_position(0).distance_to(throw.get_point_position(throw.get_point_count()-1))
     current_max_speed = lerp(min_throw_speed, max_throw_speed, (throw_distance-min_throw_distance)/(max_throw_distance-min_throw_distance))
     # TODO (10 May 2019 sam): Add the x_disp here. Lesser x disp, lesser variation in throw
     current_min_speed = current_max_speed * 0.6
     total_throw_time = throw_distance / current_max_speed
-    print('Distance: ', throw_distance, '\tSpeed: ', current_max_speed, '\tTime: ', total_throw_time)
 
 func update_offset(delta):
     var min_delta_offset = 1.0 / (total_throw_time * current_max_speed/current_min_speed)
@@ -100,15 +109,15 @@ func update_offset(delta):
 
 func calculate_throw_curve(throw_data):
     var end_point = get_point_in_world(throw_data['end'])
-    var world_dist = translation.distance_to(end_point)
+    var world_dist = path.translation.distance_to(end_point)
     var screen_dist = throw_data['start'].distance_to(throw_data['end'])
     var world_x_disp = throw_data['x_disp']* X_DISP_FACTOR * (world_dist/screen_dist)
     if abs(world_x_disp) > world_dist*MAX_OI_CURVE:
         world_x_disp = world_dist*MAX_OI_CURVE * (world_x_disp/abs(world_x_disp))
-    var oi_point = calculate_oi_point(world_dist, world_x_disp, translation, end_point)
+    var oi_point = calculate_oi_point(world_dist, world_x_disp, path.translation, end_point)
     var world_y_disp = throw_data['y_disp'] * (world_dist/screen_dist)
     var curve = Curve3D.new()
-    curve.add_point(translation)
+    curve.add_point(path.translation)
     curve.add_point(oi_point['oi_point'], oi_point['cin'], oi_point['cout'])
     curve.add_point(end_point)
     return curve
@@ -127,12 +136,12 @@ func calculate_oi_point(dist, x_disp, start, end):
     # that more oi is more height
     var max_height = (dist/2) * cos(deg2rad(45))
     var oiy = lerp(0, max_height, abs(x_disp)/dist*MAX_OI_CURVE)
-    oiy += (translation.y+end.y) / 2
+    oiy += (path.translation.y+end.y) / 2
     # We want some randomness in how the exact curve of the throw looks
     var ci = (start-end)/3.0*random.randf_range(0.8, 1.5)
     var co = (end-start)/3.0*random.randf_range(0.8, 1.5)
     return {
-        'oi_point': Vector3(oix, oiy, oiz),
+        'oi_point': start + Vector3(oix, oiy, oiz),
         'cin': ci,
         'cout': co
     }
@@ -144,15 +153,19 @@ func get_point_in_world(position):
     # See if there is a more elegant approach that isn't so hardcoded.
     var camera = get_parent().get_parent().get_parent().get_node('Camera')
     var start_point = camera.project_ray_origin(position)
-    var end_point = start_point + 100*camera.project_ray_normal(position)
+    # TODO (15 May 2019 sam): The 10000 marked below is hardcoded. It is meant
+    # to ensure that the ray is long enough to intersect with the ground in all
+    # cases. See if there is a better way to do this.
+    var end_point = start_point + 10000*camera.project_ray_normal(position)
     var point = get_world().direct_space_state.intersect_ray(start_point, end_point)
     if not point: return
     return point.position
 
 func trace_path(curve):
+    return
     var tm = preload("res://TrailMarker.tscn")
-    for child in path_tracers.get_children():
-        path_tracers.remove_child(child)
+    # for child in path_tracers.get_children():
+    #     path_tracers.remove_child(child)
     var steps = 60
     for i in range(curve.get_point_count()-1):
         var t = tm.instance()
@@ -162,14 +175,14 @@ func trace_path(curve):
             t = tm.instance()
             t.translation = curve.interpolate(i, float(j)/steps)
             path_tracers.add_child(t)
-    var cip = tm.instance()
-    cip.translation = curve.get_point_in(1) + curve.get_point_position(1)
-    cip.scale = Vector3(.5, .5, .5)
-    path_tracers.add_child(cip)
-    var cop = tm.instance()
-    cop.translation = curve.get_point_out(1) + curve.get_point_position(1)
-    cop.scale = Vector3(.5, .5, .5)
-    path_tracers.add_child(cop)
+    # var cip = tm.instance()
+    # cip.translation = curve.get_point_in(1) + curve.get_point_position(1)
+    # cip.scale = Vector3(.5, .5, .5)
+    # path_tracers.add_child(cip)
+    # var cop = tm.instance()
+    # cop.translation = curve.get_point_out(1) + curve.get_point_position(1)
+    # cop.scale = Vector3(.5, .5, .5)
+    # path_tracers.add_child(cop)
 
 # TODO (10 May 2019 sam): Right now the throw ends at the point on the ground
 # Moving forward, we might want to actually throw to a point at a certain height
@@ -188,3 +201,9 @@ func trace_path(curve):
 # it like a vue-x store. Might be useful for wiring up signals etc. We can also
 # have one for each scene or whatever. Might make code organization a little
 # more elegant
+
+# FIXME (15 May 2019 sam): !TranslationError. There seems to be an issue with the
+# translation values of path_follow, disc and path. path_follow seems to have a
+# global translation while all the others look like the have a relative to parent
+# translation value. This results in various errors when we are trying to make a
+# throw from anywhere other than Vector3(0, 0, 0)

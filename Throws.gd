@@ -1,16 +1,18 @@
 extends Spatial
 
-export var number_of_cutters = 50
+export var number_of_cutters = 10
 
 var player
-var random
 
 func _ready():
-    random = RandomNumberGenerator.new()
     player = preload("res://Player.tscn")
     for i in range(number_of_cutters):
-        generate_random_cutter()
+        var p = player.instance()
+        add_child(p)
+        # FIXME (15 May 2019 sam): Calling reset_position() i times. If this
+        # is not done, all the instances seem to have the same random seed, and
+        # this causes a lot of weird bugs.
+        for j in range(i+1):
+            p.reset_position()
 
-func generate_random_cutter():
-    var p = player.instance()
-    # set pos and direction and instantiate
+
