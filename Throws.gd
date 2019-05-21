@@ -1,6 +1,6 @@
 extends Spatial
 
-export var number_of_cutters = 10
+export var number_of_cutters = 0
 
 var player
 
