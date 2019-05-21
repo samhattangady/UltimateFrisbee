@@ -37,6 +37,7 @@ far = 511.8
 script = ExtResource( 5 )
 
 [node name="Path" type="Path" parent="."]
+editor/display_folded = true
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0.636 )
 curve = SubResource( 1 )
 
@@ -50,7 +51,6 @@ transform = Transform( 0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0, 0 )
 script = ExtResource( 7 )
 
 [node name="DebugLayer" type="Control" parent="."]
-editor/display_folded = true
 margin_right = 40.0
 margin_bottom = 40.0
 script = ExtResource( 8 )

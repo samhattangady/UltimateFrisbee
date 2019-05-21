@@ -21,4 +21,3 @@ shape = SubResource( 3 )
 [node name="DebugLabel" type="Label" parent="."]
 margin_right = 40.0
 margin_bottom = 14.0
-

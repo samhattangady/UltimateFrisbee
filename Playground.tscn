@@ -37,5 +37,4 @@ transform = Transform( -8.74228e-09, 0, 5, 0, 1, 0, -0.2, 0, -2.18557e-07, 0, 1,
 
 [node name="Disc" parent="." instance=ExtResource( 6 )]
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -4.38374, 0.498647, 0 )
-
 [connection signal="throw" from="ThrowCanvas" to="Cube" method="_on_ThrowCanvas_throw"]
