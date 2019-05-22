@@ -1,4 +1,4 @@
-extends Spatial
+extends KinematicBody
 
 var currently_thrown = false
 var playing = true
@@ -6,9 +6,8 @@ var path_tracers = []
 var path_follow = PathFollow
 var path = Path
 var random = RandomNumberGenerator
-var disc = KinematicBody
 
-var debug_previous_throw = {}
+var previous_throw = {}
 
 export var max_throw_speed = 30.0
 export var min_throw_speed = 12.0
@@ -35,31 +34,43 @@ const X_DISP_FACTOR = 0.8
 
 const DEBUG = true
 signal position_update(position)
-signal throw_started(curve)
 signal throw_complete(position)
 
 func _ready():
-    path_tracers = get_parent().get_node("DebugPaths")
-    path_follow = get_node("Path/PathFollow")
-    path = get_node("Path")
-    disc = get_node('Path/PathFollow/KinematicBody')
+    path_tracers = get_parent().get_parent().get_parent().get_node("DebugPaths")
+    path_follow = get_parent()
+    path = get_parent().get_parent()
     random = RandomNumberGenerator.new()
     emit_signal("throw_complete", path.translation)
 
 func _process(delta):
+    # translation = path_follow.translation - path.translation
     if DEBUG:
         emit_signal("position_update", path_follow.translation)
     if currently_thrown and playing:
         update_offset(delta)
+        if path_follow.unit_offset >= 1:
+            currently_thrown = false
+            # FIXME (15 May 2019 sam): !TranslationError. See bottom
+            path.translation = path_follow.translation
+            path_follow.unit_offset = 0
+            emit_signal("throw_complete", path.translation)
 
 func _input(event):
+    if event.is_action_pressed("ui_accept"):
+        execute_throw({
+            "end": Vector2(498, 162),
+            "start": Vector2(533, 471),
+            "x_disp": 130.949036,
+            "y_disp": -310.975891
+        })
     if event.is_action_pressed("ui_down"):
         playing = !playing
     if event.is_action_pressed("ui_left"):
-        execute_throw(debug_previous_throw)
+        execute_throw(previous_throw)
 
 func _on_ThrowCanvas_throw(throw):
-    debug_previous_throw = throw
+    previous_throw = throw
     execute_throw(throw)
 
 func execute_throw(throw):
@@ -67,28 +78,22 @@ func execute_throw(throw):
     var end_point = get_point_in_world(throw['end'])
     if not end_point: return
     var curve = calculate_throw_curve(throw)
+    var path = get_parent().get_parent()
     path.curve = curve
-    # trace_path(curve)
-    start_throw(throw, curve)
+    trace_path(curve)
+    start_throw(curve)
 
-func start_throw(throw, curve):
+func start_throw(throw):
     currently_thrown = true
-    emit_signal('throw_started', path.curve)
     # FIXME (15 May 2019 sam): !TranslationError. See bottom
     if number_of_throws != 0:
         translation = -path.translation
     number_of_throws += 1
-    var throw_distance = curve.get_point_position(0).distance_to(curve.get_point_position(curve.get_point_count()-1))
+    var throw_distance = throw.get_point_position(0).distance_to(throw.get_point_position(throw.get_point_count()-1))
     current_max_speed = lerp(min_throw_speed, max_throw_speed, (throw_distance-min_throw_distance)/(max_throw_distance-min_throw_distance))
-    total_throw_time = throw_distance / current_max_speed
-    # total_throw_time = throw['msecs'] / 1000.0 * 2.0
-    # current_max_speed = throw_distance / total_throw_time
     # TODO (10 May 2019 sam): Add the x_disp here. Lesser x disp, lesser variation in throw
     current_min_speed = current_max_speed * 0.6
-    # var tween = Tween.new()
-    # tween.interpolate_property(path_follow, 'unit_offset', 0.0, 1.0, 4.0,
-    #                            Tween.TRANS_LINEAR, Tween.EASE_IN)
-    # tween.start()
+    total_throw_time = throw_distance / current_max_speed
 
 func update_offset(delta):
     var min_delta_offset = 1.0 / (total_throw_time * current_max_speed/current_min_speed)
@@ -96,19 +101,10 @@ func update_offset(delta):
     var offset = path_follow.unit_offset
     if offset < 0.5:
         offset_delta = lerp(max_delta_offset, min_delta_offset, offset*2)
-    elif offset < 1.0:
+    elif offset < 1:
         offset_delta = lerp(min_delta_offset, max_delta_offset, (offset-0.5)*2)
     else:
         offset_delta = 0
-        currently_thrown = false
-        # FIXME (15 May 2019 sam): !TranslationError. See bottom
-        # NOTE (22 May 2019 sam): Note that this logic will be removed once we have
-        # players catching the disc. At that point, we will just be using the players
-        # translation instead of bothering with path_follow etc.
-        path_follow.unit_offset = 0.999
-        path.translation = path_follow.translation
-        path_follow.unit_offset = 0
-        emit_signal("throw_complete", path.translation)
     path_follow.unit_offset += offset_delta*delta
 
 func calculate_throw_curve(throw_data):
@@ -155,7 +151,7 @@ func get_point_in_world(position):
     # TODO (08 May 2019 sam): Camera has project_position. See if it's better
     # TODO (08 May 2019 sam): Currently saying get_parent() multiple times
     # See if there is a more elegant approach that isn't so hardcoded.
-    var camera = get_parent().get_parent().get_node('GameCamera')
+    var camera = get_parent().get_parent().get_parent().get_node('Camera')
     var start_point = camera.project_ray_origin(position)
     # TODO (15 May 2019 sam): The 10000 marked below is hardcoded. It is meant
     # to ensure that the ray is long enough to intersect with the ground in all
@@ -166,9 +162,10 @@ func get_point_in_world(position):
     return point.position
 
 func trace_path(curve):
+    return
     var tm = preload("res://TrailMarker.tscn")
-    for child in path_tracers.get_children():
-        path_tracers.remove_child(child)
+    # for child in path_tracers.get_children():
+    #     path_tracers.remove_child(child)
     var steps = 60
     for i in range(curve.get_point_count()-1):
         var t = tm.instance()
@@ -210,7 +207,3 @@ func trace_path(curve):
 # global translation while all the others look like the have a relative to parent
 # translation value. This results in various errors when we are trying to make a
 # throw from anywhere other than Vector3(0, 0, 0)
-
-# TODO (22 May 2019 sam): Right now, a straight throw results in the disc travelling
-# at ground level from start to end. Figure out how to deal with that once we have
-# players catching the disc etc.

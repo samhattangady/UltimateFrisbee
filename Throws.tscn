@@ -37,7 +37,6 @@ far = 511.8
 script = ExtResource( 5 )
 
 [node name="Path" type="Path" parent="."]
-editor/display_folded = true
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0.636 )
 curve = SubResource( 1 )
 

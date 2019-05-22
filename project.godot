@@ -16,7 +16,7 @@ _global_script_class_icons={
 [application]
 
 config/name="UltimateFrisbee"
-run/main_scene="res://Throws.tscn"
+run/main_scene="res://PlayingField.tscn"
 config/icon="res://icon.png"
 
 [debug]

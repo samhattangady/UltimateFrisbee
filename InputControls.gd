@@ -5,9 +5,12 @@ var mouse_down = false
 var is_throwing = false
 var is_panning = false
 var pan_start = Vector2(0, 0)
+var throw_start_time = 0
+
 signal throw(throw_data)
 signal pan_start()
 signal pan_camera(pan_start, pan_end, origin)
+signal mark_point(point)
 
 var disc_points = Vector2(0, 0)
 var throw_radius = 100
@@ -18,7 +21,7 @@ func _ready():
     calculate_disc_points()
 
 func _input(event):
-    if event is InputEventMouseButton:
+    if event is InputEventMouseButton and event.get_button_index() == BUTTON_LEFT:
         if event.is_pressed():
             throw_path = []
             # TODO (08 May 2019 sam): Check if the user is clicking
@@ -27,6 +30,7 @@ func _input(event):
             var distance = event.position.distance_to(disc_points)
             if distance < throw_radius:
                 is_throwing = true
+                throw_start_time = OS.get_ticks_msec()
             elif distance > throw_radius+throw_radius_buffer:
                 is_panning = true
                 emit_signal("pan_start")
@@ -41,11 +45,15 @@ func _input(event):
                 # up here.
                 if len(throw_path) > 3:
                     var throw_data = identify_throw(throw_path)
+                    throw_data['msecs'] = OS.get_ticks_msec() - throw_start_time
                     emit_signal("throw", throw_data)
             mouse_down = false
             is_throwing = false
             is_panning = false
             throw_path = []
+    if event is InputEventMouseButton and event.get_button_index() == BUTTON_RIGHT:
+        # DEBUG
+        emit_signal('mark_point', event.position)
     if mouse_down and event is InputEventMouseMotion:
         if is_throwing:
             throw_path.append(event.position)

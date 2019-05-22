@@ -4,6 +4,8 @@ var start_x = 0.0
 var start_z = 0.0
 var start_origin = Vector3(0, 0, 0)
 
+# FIXME (22 May 2019 sam): Currently these are hardcoded into the script. It should
+# instead be taken from whatever values were set in the editor.
 var camera_height = 30
 var camera_z_offset = 15
 var camera_x_offset = 0
@@ -12,7 +14,6 @@ func _ready():
     calculate_start_origin()
 
 func pan_camera(pan_start, pan_end, origin):
-    print("panning", pan_start, pan_end, origin)
     # TODO (15 May 2019 sam): Prevent panning when the disc is in the air?
     var start = pan_start - origin
     var end = pan_end - origin
@@ -26,7 +27,6 @@ func pan_camera(pan_start, pan_end, origin):
 
 func pan_start():
     # TODO (15 May 2019 sam): Prevent panning when the disc is in the air?
-    print("starting pan")
     calculate_start_origin()
     start_rotation = rotation.y
     start_x = translation.x
@@ -38,6 +38,8 @@ func get_point_in_world(position):
     var camera = get_node('.')
     var start_point = camera.project_ray_origin(position)
     var end_point = start_point + 100*camera.project_ray_normal(position)
+    # TODO (22 May 2019 sam): The intersect ray should only intersect with the ground
+    # Look into collision layers and masks for further guidance on that.
     var point = get_world().direct_space_state.intersect_ray(start_point, end_point)
     if not point: return
     return point.position
@@ -51,8 +53,15 @@ func calculate_start_origin():
     start_origin= get_point_in_world(disc_points)
 
 func throw_complete(position):
+    # We want the camera to center the disc to the point 3/4th y and 1/2 x
+    # `start_origin` is already fixed at that point. So that's what we use
     start_origin = position
-    translation.x = position.x+camera_x_offset
-    translation.y = position.y+camera_height
-    translation.z = position.z+camera_z_offset
-    pass
+    translation.x = start_origin.x+camera_x_offset
+    translation.y = start_origin.y+camera_height
+    translation.z = start_origin.z+camera_z_offset
+
+
+# TODO (22 May 2019 sam): There may be different camera movements that we want to
+# explore. Specifically anchored to disc. That might be fun. Also, after the throw
+# is complete, we may not want to abruptly snap to disc. A quick pan is probably
+# preferable to the sudden snap
