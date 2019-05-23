@@ -1,5 +1,6 @@
 extends Spatial
 
+
 var currently_thrown = false
 var playing = true
 var path_tracers = []
@@ -16,6 +17,10 @@ export var min_throw_speed = 12.0
 export var max_throw_distance = 80.0
 export var min_throw_distance = 15.0
 
+export var fast_throw_speed = 70.0
+export var slow_throw_speed = 17.0
+export var fast_to_slow_ratio = 3.0
+
 # These are calculated for each throw
 var total_throw_time = 0
 var current_max_speed = 0
@@ -23,6 +28,7 @@ var current_min_speed = 0
 var offset_delta = 0
 
 var number_of_throws = 0
+var throw_start_time = 0
 
 # This is the amount of x distance a disc can curve by
 # relative to its total distance travelled (straight-line disp)
@@ -33,9 +39,11 @@ const MAX_OI_CURVE = 0.5
 # back under control
 const X_DISP_FACTOR = 0.8
 
+var DISC_CALCULATOR
+
 const DEBUG = true
 signal position_update(position)
-signal throw_started(curve)
+signal throw_started(curve, throw_time)
 signal throw_complete(position)
 
 func _ready():
@@ -44,6 +52,7 @@ func _ready():
     path = get_node("Path")
     disc = get_node('Path/PathFollow/KinematicBody')
     random = RandomNumberGenerator.new()
+    DISC_CALCULATOR = preload('DiscCalculator.gd')
     emit_signal("throw_complete", path.translation)
 
 func _process(delta):
@@ -73,43 +82,56 @@ func execute_throw(throw):
 
 func start_throw(throw, curve):
     currently_thrown = true
-    emit_signal('throw_started', path.curve)
     # FIXME (15 May 2019 sam): !TranslationError. See bottom
     if number_of_throws != 0:
         translation = -path.translation
     number_of_throws += 1
+    self.calculate_throw_speed(throw, curve)
+    self.emit_signal('throw_started', curve, self.total_throw_time)
+    self.throw_start_time = OS.get_ticks_msec()
+
+func calculate_throw_speed(throw, curve):
     var throw_distance = curve.get_point_position(0).distance_to(curve.get_point_position(curve.get_point_count()-1))
-    current_max_speed = lerp(min_throw_speed, max_throw_speed, (throw_distance-min_throw_distance)/(max_throw_distance-min_throw_distance))
-    total_throw_time = throw_distance / current_max_speed
-    # total_throw_time = throw['msecs'] / 1000.0 * 2.0
-    # current_max_speed = throw_distance / total_throw_time
+    var throw_stroke_speed = throw_distance / (throw['msecs'] / 1000.0)
+    # throw_stroke_speed = min(throw_stroke_speed, self.fast_throw_speed)
+    # throw_stroke_speed = max(throw_stroke_speed, self.slow_throw_speed)
+    var throw_distance_ratio = (throw_distance-self.min_throw_distance)/(self.max_throw_distance-self.min_throw_distance)
+    self.current_max_speed = lerp(self.min_throw_speed, self.max_throw_speed, throw_distance_ratio)
+    var stroke_speed_ratio = (throw_stroke_speed-self.slow_throw_speed) / (self.fast_throw_speed - self.slow_throw_speed)
+    self.current_max_speed *= lerp(0.7, 1.7, stroke_speed_ratio)
+    self.total_throw_time = throw_distance / self.current_max_speed
+    print('total throw time', self.total_throw_time)
     # TODO (10 May 2019 sam): Add the x_disp here. Lesser x disp, lesser variation in throw
-    current_min_speed = current_max_speed * 0.6
-    # var tween = Tween.new()
-    # tween.interpolate_property(path_follow, 'unit_offset', 0.0, 1.0, 4.0,
-    #                            Tween.TRANS_LINEAR, Tween.EASE_IN)
-    # tween.start()
+    self.current_min_speed = self.current_max_speed * 0.6
 
 func update_offset(delta):
-    var min_delta_offset = 1.0 / (total_throw_time * current_max_speed/current_min_speed)
-    var max_delta_offset = 1.0 / (total_throw_time)
-    var offset = path_follow.unit_offset
-    if offset < 0.5:
-        offset_delta = lerp(max_delta_offset, min_delta_offset, offset*2)
-    elif offset < 1.0:
-        offset_delta = lerp(min_delta_offset, max_delta_offset, (offset-0.5)*2)
-    else:
-        offset_delta = 0
-        currently_thrown = false
-        # FIXME (15 May 2019 sam): !TranslationError. See bottom
-        # NOTE (22 May 2019 sam): Note that this logic will be removed once we have
-        # players catching the disc. At that point, we will just be using the players
-        # translation instead of bothering with path_follow etc.
-        path_follow.unit_offset = 0.999
-        path.translation = path_follow.translation
-        path_follow.unit_offset = 0
-        emit_signal("throw_complete", path.translation)
-    path_follow.unit_offset += offset_delta*delta
+    # var min_delta_offset = 1.0 / (total_throw_time * current_max_speed/current_min_speed)
+    # var max_delta_offset = 1.0 / (total_throw_time)
+    # var offset = path_follow.unit_offset
+    # if offset < 0.5:
+    #     offset_delta = lerp(max_delta_offset, min_delta_offset, offset*2)
+    # elif offset < 1.0:
+    #     offset_delta = lerp(min_delta_offset, max_delta_offset, (offset-0.5)*2)
+    # else:
+    #     offset_delta = 0
+    #     currently_thrown = false
+    #     # FIXME (15 May 2019 sam): !TranslationError. See bottom
+    #     # NOTE (22 May 2019 sam): Note that this logic will be removed once we have
+    #     # players catching the disc. At that point, we will just be using the players
+    #     # translation instead of bothering with path_follow etc.
+    #     path_follow.unit_offset = 0.999
+    #     path.translation = path_follow.translation
+    #     path_follow.unit_offset = 0
+    #     emit_signal("throw_complete", path.translation)
+    #     var actual_time = (OS.get_ticks_msec()-self.throw_start_time) / 1000.0
+    #     print('Actual throw time ', actual_time)
+    #     print('ratio ', actual_time/self.total_throw_time)
+    # path_follow.unit_offset += offset_delta*delta
+    self.path_follow.unit_offset = DISC_CALCULATOR.get_next_disc_offset(
+                                self.path_follow.unit_offset, delta,
+                                self.total_throw_time,
+                                self.current_max_speed,
+                                self.current_min_speed)
 
 func calculate_throw_curve(throw_data):
     var end_point = get_point_in_world(throw_data['end'])
@@ -214,3 +236,7 @@ func trace_path(curve):
 # TODO (22 May 2019 sam): Right now, a straight throw results in the disc travelling
 # at ground level from start to end. Figure out how to deal with that once we have
 # players catching the disc etc.
+
+# TODO (23 May 2019 sam): On slower throws, we need to add more height to the throws
+# and give them a more floaty trajectory. Right now, the timing is good, but the path
+# looks a little off.

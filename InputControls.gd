@@ -65,7 +65,7 @@ func _draw():
     for i in range(len(throw_path)-1):
         draw_line(throw_path[i], throw_path[i+1], Color.white, 10.0)
     if draw_throw_circle:
-        draw_circle(disc_points, throw_radius, Color(1, 1, 1, 0.3))
+        draw_circle(disc_points, throw_radius, Color(1, 1, 1, 0.1))
 
 func identify_throw(path):
     var rotated_path = rotate_path_to_y_axis(path)
@@ -159,3 +159,11 @@ func calculate_disc_points():
 # TODO (14 May 2019 sam): Clean up calculate disc_points. We are using it across
 # different scripts, which is not ideal. Figure out some way to have a central
 # store of all these variables so that they can easily be accessed.
+
+# TODO (23 May 2019 sam): Add a feature so that if the person is throwing and they
+# are on the same pixel for n amount of time, the throw is considered complete, and
+# the disc is thrown.
+
+# TODO (23 May 2019 sam): Calculate speed of throw using path here itself, and send
+# that to Disc. Currently, a fast and blady throw is coming out a little slower than
+# I like.
