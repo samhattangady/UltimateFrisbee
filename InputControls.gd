@@ -36,6 +36,7 @@ func _input(event):
                 emit_signal("pan_start")
                 pan_start = event.position
         else:
+            print('from inputcontrols throwin')
             if is_throwing:
                 # TODO (06 May 2019 sam): Make sure there are
                 # atleast 3-4 points. Or calculate length of
@@ -46,6 +47,7 @@ func _input(event):
                 if len(throw_path) > 3:
                     var throw_data = identify_throw(throw_path)
                     throw_data['msecs'] = OS.get_ticks_msec() - throw_start_time
+                    print('from inputcontrols throwin')
                     emit_signal("throw", throw_data)
             mouse_down = false
             is_throwing = false

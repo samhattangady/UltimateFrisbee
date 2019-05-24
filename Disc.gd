@@ -52,7 +52,7 @@ func _ready():
     path = get_node("Path")
     disc = get_node('Path/PathFollow/KinematicBody')
     random = RandomNumberGenerator.new()
-    DISC_CALCULATOR = preload('DiscCalculator.gd')
+    DISC_CALCULATOR = load('DiscCalculator.gd').new()
     emit_signal("throw_complete", path.translation)
 
 func _process(delta):
@@ -66,12 +66,18 @@ func _input(event):
         playing = !playing
     if event.is_action_pressed("ui_left"):
         execute_throw(debug_previous_throw)
-
-func _on_ThrowCanvas_throw(throw):
-    debug_previous_throw = throw
-    execute_throw(throw)
+    if event.is_action_pressed('ui_accept'):
+        execute_throw({
+            'end':Vector2(532, 208), 
+            'msecs':518, 
+            'start':Vector2(572, 431), 
+            'x_disp':97.806732, 
+            'y_disp':-226.559036
+        })
 
 func execute_throw(throw):
+    print(throw)
+    print('exec throw')
     # Check if end point meets ground
     var end_point = get_point_in_world(throw['end'])
     if not end_point: return
@@ -105,33 +111,26 @@ func calculate_throw_speed(throw, curve):
     self.current_min_speed = self.current_max_speed * 0.6
 
 func update_offset(delta):
-    # var min_delta_offset = 1.0 / (total_throw_time * current_max_speed/current_min_speed)
-    # var max_delta_offset = 1.0 / (total_throw_time)
-    # var offset = path_follow.unit_offset
-    # if offset < 0.5:
-    #     offset_delta = lerp(max_delta_offset, min_delta_offset, offset*2)
-    # elif offset < 1.0:
-    #     offset_delta = lerp(min_delta_offset, max_delta_offset, (offset-0.5)*2)
-    # else:
-    #     offset_delta = 0
-    #     currently_thrown = false
-    #     # FIXME (15 May 2019 sam): !TranslationError. See bottom
-    #     # NOTE (22 May 2019 sam): Note that this logic will be removed once we have
-    #     # players catching the disc. At that point, we will just be using the players
-    #     # translation instead of bothering with path_follow etc.
-    #     path_follow.unit_offset = 0.999
-    #     path.translation = path_follow.translation
-    #     path_follow.unit_offset = 0
-    #     emit_signal("throw_complete", path.translation)
-    #     var actual_time = (OS.get_ticks_msec()-self.throw_start_time) / 1000.0
-    #     print('Actual throw time ', actual_time)
-    #     print('ratio ', actual_time/self.total_throw_time)
-    # path_follow.unit_offset += offset_delta*delta
     self.path_follow.unit_offset = DISC_CALCULATOR.get_next_disc_offset(
                                 self.path_follow.unit_offset, delta,
                                 self.total_throw_time,
                                 self.current_max_speed,
                                 self.current_min_speed)
+    var offset = self.path_follow.unit_offset
+    if offset >= 1.0:
+        offset_delta = 0
+        self.currently_thrown = false
+        # FIXME (15 May 2019 sam): !TranslationError. See bottom
+        # NOTE (22 May 2019 sam): Note that this logic will be removed once we have
+        # players catching the disc. At that point, we will just be using the players
+        # translation instead of bothering with path_follow etc.
+        self.path_follow.unit_offset = 0.999
+        self.path.translation = self.path_follow.translation
+        self.path_follow.unit_offset = 0
+        self.emit_signal("throw_complete", self.path.translation)
+        var actual_time = (OS.get_ticks_msec()-self.throw_start_time) / 1000.0
+        print('Actual throw time ', actual_time)
+        print('ratio ', actual_time/self.total_throw_time)
 
 func calculate_throw_curve(throw_data):
     var end_point = get_point_in_world(throw_data['end'])
@@ -208,11 +207,6 @@ func trace_path(curve):
     # cop.translation = curve.get_point_out(1) + curve.get_point_position(1)
     # cop.scale = Vector3(.5, .5, .5)
     # path_tracers.add_child(cop)
-
-# TODO (10 May 2019 sam): Right now the throw ends at the point on the ground
-# Moving forward, we might want to actually throw to a point at a certain height
-# in the air. At that juncture, we will have to figure out how to make the disc
-# travel till it hits the ground, as well as maybe the bouncing etc.
 
 # TODO (10 May 2019 sam): Deal with all the y_disp stuff in throw calculation
 # That is what will allow the users to add height to their throws, for blades
