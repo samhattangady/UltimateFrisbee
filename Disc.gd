@@ -57,6 +57,7 @@ func _process(delta):
     if DEBUG:
         emit_signal('position_update', path_follow.translation)
     if currently_thrown and playing:
+        print('disc ', self.path_follow.translation) 
         update_offset(delta)
 
 func _input(event):
@@ -83,13 +84,15 @@ func execute_throw(throw):
     start_throw(throw, curve)
 
 func start_throw(throw, curve):
-    currently_thrown = true
     # FIXME (15 May 2019 sam): !TranslationError. See bottom
     if number_of_throws != 0:
         translation = -path.translation
     number_of_throws += 1
     self.calculate_throw_speed(throw, curve)
-    self.emit_signal('throw_started', curve, {
+
+func start_throw_animation():
+    self.currently_thrown = true
+    self.emit_signal('throw_started', self.path.curve, {
         'time': self.total_throw_time,
         'max_speed': self.current_max_speed,
         'min_speed': self.current_min_speed
@@ -118,17 +121,20 @@ func update_offset(delta):
                                 self.current_min_speed)
     var offset = self.path_follow.unit_offset
     if offset >= 1.0:
-        self.currently_thrown = false
-        # FIXME (15 May 2019 sam): !TranslationError. See bottom
-        # NOTE (22 May 2019 sam): Note that this logic will be adjusted once we have
-        # players catching the disc. At that point, we will just be using the players
-        # translation instead of bothering with path_follow etc.
-        self.path_follow.unit_offset = 0.999
-        self.path.translation = self.path_follow.translation
-        self.path_follow.unit_offset = 0.0
-        self.throw_time_elapsed = 0.0
-        self.emit_signal('throw_complete', self.path.translation)
-        var actual_time = (OS.get_ticks_msec()-self.throw_start_time) / 1000.0
+        self.throw_is_complete()
+
+func throw_is_complete():
+    self.currently_thrown = false
+    # FIXME (15 May 2019 sam): !TranslationError. See bottom
+    # NOTE (22 May 2019 sam): Note that this logic will be adjusted once we have
+    # players catching the disc. At that point, we will just be using the players
+    # translation instead of bothering with path_follow etc.
+    self.path_follow.unit_offset = 0.999
+    self.path.translation = self.path_follow.translation
+    self.path_follow.unit_offset = 0.0
+    self.throw_time_elapsed = 0.0
+    self.emit_signal('throw_complete', self.path.translation)
+    var actual_time = (OS.get_ticks_msec()-self.throw_start_time) / 1000.0
 
 func calculate_throw_curve(throw_data):
     var end_point = get_point_in_world(throw_data['end'])
@@ -185,7 +191,8 @@ func get_point_in_world(position):
     return point.position
 
 func attach_to_wrist(global_transform):
-    self.transform = global_transform
+    self.translation = global_transform.basis[0]
+    print(self.translation)
 
 # TODO (10 May 2019 sam): Deal with all the y_disp stuff in throw calculation
 # That is what will allow the users to add height to their throws, for blades

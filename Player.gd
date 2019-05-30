@@ -165,3 +165,4 @@ func get_point_in_world(position):
     var point = get_world().direct_space_state.intersect_ray(start_point, end_point)
     if not point: return
     return point.position
+

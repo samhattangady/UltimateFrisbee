@@ -3,7 +3,6 @@
 [sub_resource type="CubeMesh" id=1]
 
 [sub_resource type="SpatialMaterial" id=2]
-flags_transparent = true
 albedo_color = Color( 0.196078, 0.623529, 0.14902, 0.607843 )
 
 [sub_resource type="ConvexPolygonShape" id=3]

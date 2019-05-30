@@ -1,6 +1,7 @@
 extends Node2D
 
 var throw_path = []
+var drag_path = []
 var mouse_down = false
 var is_throwing = false
 var is_panning = false
@@ -11,6 +12,7 @@ signal throw(throw_data)
 signal pan_start()
 signal pan_camera(pan_start, pan_end, origin)
 signal mark_point(point)
+signal tap_location(point)
 
 var disc_points = Vector2(0, 0)
 var throw_radius = 100
@@ -23,40 +25,45 @@ func _ready():
 func _input(event):
     if event is InputEventMouseButton and event.get_button_index() == BUTTON_LEFT:
         if event.is_pressed():
-            throw_path = []
-            mouse_down = true
+            self.throw_path = []
+            self.mouse_down = true
             var distance = event.position.distance_to(disc_points)
-            if distance < throw_radius:
-                is_throwing = true
-                throw_start_time = OS.get_ticks_msec()
-            elif distance > throw_radius+throw_radius_buffer:
-                is_panning = true
-                emit_signal("pan_start")
-                pan_start = event.position
+            if distance < self.throw_radius:
+                self.is_throwing = true
+                self.throw_start_time = OS.get_ticks_msec()
+            elif distance > self.throw_radius+self.throw_radius_buffer:
+                self.is_panning = true
+                self.emit_signal("pan_start")
+                self.pan_start = event.position
         else:
-            if is_throwing:
+            if len(drag_path) == 0:
+                # Player is tapping. Not dragging
+                self.emit_signal('tap_location', event.position)
+            if self.is_throwing:
                 # TODO (06 May 2019 sam): Make sure there are
                 # atleast 3-4 points. Or calculate length of
                 # the path. Or some other kind of verification
                 # We also ought to be checking if there is any
                 # cause for DivisionByZeroError to be cropping
                 # up here.
-                if len(throw_path) > 3:
-                    var throw_data = identify_throw(throw_path)
-                    throw_data['msecs'] = OS.get_ticks_msec() - throw_start_time
-                    emit_signal("throw", throw_data)
-            mouse_down = false
-            is_throwing = false
-            is_panning = false
-            throw_path = []
+                if len(self.throw_path) > 3:
+                    var throw_data = self.identify_throw(throw_path)
+                    throw_data['msecs'] = OS.get_ticks_msec() - self.throw_start_time
+                    self.emit_signal("throw", throw_data)
+            self.mouse_down = false
+            self.is_throwing = false
+            self.is_panning = false
+            self.throw_path = []
+            self.drag_path = []
     if event is InputEventMouseButton and event.get_button_index() == BUTTON_RIGHT:
         # DEBUG
-        emit_signal('mark_point', event.position)
+        self.emit_signal('mark_point', event.position)
     if mouse_down and event is InputEventMouseMotion:
-        if is_throwing:
-            throw_path.append(event.position)
-        elif is_panning:
-            emit_signal("pan_camera", pan_start, event.position, disc_points)
+        self.drag_path.append(event.position)
+        if self.is_throwing:
+            self.throw_path.append(event.position)
+        elif self.is_panning:
+            self.emit_signal("pan_camera", pan_start, event.position, disc_points)
     update()
 
 func _draw():
@@ -80,7 +87,7 @@ func identify_throw(path):
 func get_throw(path):
     # Tells us whether a throw is a backhand or forehand etc
     var start_point = path[0]
-    if start_point.x < disc_points.x:
+    if start_point.x > disc_points.x:
         return 'Forehand'
     else:
         return 'Backhand'
