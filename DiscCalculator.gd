@@ -10,8 +10,16 @@ func get_disc_offset(time, total_throw_time, max_speed, min_speed):
     var lin_ratio = (min_speed / max_speed)
     var exp_ratio = 1 - lin_ratio
     var progress = (time/total_throw_time)
-    # return progress
-    return (lin_ratio * progress) + (exp_ratio * pow((1-2*progress), 2))
+    var exp_component = 0
+    if progress < 0.5:
+        var angle = lerp(0, PI/2, progress*2)
+        # exp_component = 0.5 - 0.5*pow((1-2*progress), 2)
+        exp_component = 0.5*sin(angle)
+    else:
+        var angle = lerp(-PI/2, 0, (progress-0.5)*2)
+        # exp_component = 0.5 + 0.5*pow((1-2*progress), 2)
+        exp_component = 0.5 + 0.5*(sin(angle)+1)
+    return (lin_ratio * progress) + (exp_ratio * exp_component)
 
 func get_next_disc_offset(offset, delta, total_throw_time, max_speed, min_speed):
     var time = get_disc_time(offset, total_throw_time, max_speed, min_speed)
@@ -19,41 +27,6 @@ func get_next_disc_offset(offset, delta, total_throw_time, max_speed, min_speed)
     return new_offset
 
 func get_disc_time(offset, total_throw_time, max_speed, min_speed):
-    # print(offset, total_throw_time, max_speed, min_speed)
-    # TODO Print all these for debugging in test.
-    # We need to return the inverse of `get_disc_offset`
-    print('offset ', offset)
-    print('total_throw_time ', total_throw_time)
-    print('max_speed ', max_speed)
-    print('min_speed ', min_speed)
-    var lin_ratio = (min_speed / max_speed)
-    var exp_ratio = 1.0 - lin_ratio
-    print('lin_ratio ', lin_ratio)
-    print('exp_ratio ', exp_ratio)
-    # Using the quadratic equation to solve the whole mess
-    var a = 4.0 * exp_ratio
-    var b = lin_ratio - 4.0*exp_ratio
-    var c = exp_ratio - offset
-    print('a ', a)
-    print('b ', b)
-    print('c ',c)
-    var b2_4ac = pow(b,2) - 4.0*a*c
-    print('b2_4ac ', b2_4ac)
-    var sol1 = (-b + sqrt(b2_4ac)) / (2.0*a)
-    var sol2 = (-b - sqrt(b2_4ac)) / (2.0*a)
-    print('sol1 ', sol1)
-    print('sol2 ', sol2)
-    # return offset*total_throw_time
-    return sol1
-    if offset <= 0.5:
-        if sol1 <= 0.5: return sol1
-        else: return sol2
-    else:
-        if sol1 > 0.5: return sol1
-        else: return sol2
-    # We return whichever is in 0-1.
-    # TODO (23 May 2019 sam): Check if this assumption is correct
-    if 0.0 <= sol1 and sol1 <= 1.0:
-        return sol1
-    else:
-        return sol2
+    # This function returns the inverse of `get_disc_offset`
+    # TODO (24 May 2019 sam): Implement inverse of get_disc_offset
+    pass

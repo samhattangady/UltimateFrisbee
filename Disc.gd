@@ -3,7 +3,6 @@ extends Spatial
 
 var currently_thrown = false
 var playing = true
-var path_tracers = []
 var path_follow = PathFollow
 var path = Path
 var random = RandomNumberGenerator
@@ -25,7 +24,7 @@ export var fast_to_slow_ratio = 3.0
 var total_throw_time = 0
 var current_max_speed = 0
 var current_min_speed = 0
-var offset_delta = 0
+var throw_time_elapsed = 0
 
 var number_of_throws = 0
 var throw_start_time = 0
@@ -43,28 +42,27 @@ var DISC_CALCULATOR
 
 const DEBUG = true
 signal position_update(position)
-signal throw_started(curve, throw_time)
+signal throw_started(curve, throw_details)
 signal throw_complete(position)
 
 func _ready():
-    path_tracers = get_parent().get_node("DebugPaths")
-    path_follow = get_node("Path/PathFollow")
-    path = get_node("Path")
+    path_follow = get_node('Path/PathFollow')
+    path = get_node('Path')
     disc = get_node('Path/PathFollow/KinematicBody')
     random = RandomNumberGenerator.new()
     DISC_CALCULATOR = load('DiscCalculator.gd').new()
-    emit_signal("throw_complete", path.translation)
+    emit_signal('throw_complete', path.translation)
 
 func _process(delta):
     if DEBUG:
-        emit_signal("position_update", path_follow.translation)
+        emit_signal('position_update', path_follow.translation)
     if currently_thrown and playing:
         update_offset(delta)
 
 func _input(event):
-    if event.is_action_pressed("ui_down"):
+    if event.is_action_pressed('ui_down'):
         playing = !playing
-    if event.is_action_pressed("ui_left"):
+    if event.is_action_pressed('ui_left'):
         execute_throw(debug_previous_throw)
     if event.is_action_pressed('ui_accept'):
         execute_throw({
@@ -76,8 +74,6 @@ func _input(event):
         })
 
 func execute_throw(throw):
-    print(throw)
-    print('exec throw')
     # Check if end point meets ground
     var end_point = get_point_in_world(throw['end'])
     if not end_point: return
@@ -93,7 +89,11 @@ func start_throw(throw, curve):
         translation = -path.translation
     number_of_throws += 1
     self.calculate_throw_speed(throw, curve)
-    self.emit_signal('throw_started', curve, self.total_throw_time)
+    self.emit_signal('throw_started', curve, {
+        'time': self.total_throw_time,
+        'max_speed': self.current_max_speed,
+        'min_speed': self.current_min_speed
+    })
     self.throw_start_time = OS.get_ticks_msec()
 
 func calculate_throw_speed(throw, curve):
@@ -106,31 +106,29 @@ func calculate_throw_speed(throw, curve):
     var stroke_speed_ratio = (throw_stroke_speed-self.slow_throw_speed) / (self.fast_throw_speed - self.slow_throw_speed)
     self.current_max_speed *= lerp(0.7, 1.7, stroke_speed_ratio)
     self.total_throw_time = throw_distance / self.current_max_speed
-    print('total throw time', self.total_throw_time)
     # TODO (10 May 2019 sam): Add the x_disp here. Lesser x disp, lesser variation in throw
-    self.current_min_speed = self.current_max_speed * 0.6
+    self.current_min_speed = self.current_max_speed * 0.7
 
 func update_offset(delta):
-    self.path_follow.unit_offset = DISC_CALCULATOR.get_next_disc_offset(
-                                self.path_follow.unit_offset, delta,
+    self.throw_time_elapsed += delta
+    self.path_follow.unit_offset = DISC_CALCULATOR.get_disc_offset(
+                                self.throw_time_elapsed,
                                 self.total_throw_time,
                                 self.current_max_speed,
                                 self.current_min_speed)
     var offset = self.path_follow.unit_offset
     if offset >= 1.0:
-        offset_delta = 0
         self.currently_thrown = false
         # FIXME (15 May 2019 sam): !TranslationError. See bottom
-        # NOTE (22 May 2019 sam): Note that this logic will be removed once we have
+        # NOTE (22 May 2019 sam): Note that this logic will be adjusted once we have
         # players catching the disc. At that point, we will just be using the players
         # translation instead of bothering with path_follow etc.
         self.path_follow.unit_offset = 0.999
         self.path.translation = self.path_follow.translation
-        self.path_follow.unit_offset = 0
-        self.emit_signal("throw_complete", self.path.translation)
+        self.path_follow.unit_offset = 0.0
+        self.throw_time_elapsed = 0.0
+        self.emit_signal('throw_complete', self.path.translation)
         var actual_time = (OS.get_ticks_msec()-self.throw_start_time) / 1000.0
-        print('Actual throw time ', actual_time)
-        print('ratio ', actual_time/self.total_throw_time)
 
 func calculate_throw_curve(throw_data):
     var end_point = get_point_in_world(throw_data['end'])
@@ -186,27 +184,8 @@ func get_point_in_world(position):
     if not point: return
     return point.position
 
-func trace_path(curve):
-    var tm = preload("res://TrailMarker.tscn")
-    for child in path_tracers.get_children():
-        path_tracers.remove_child(child)
-    var steps = 60
-    for i in range(curve.get_point_count()-1):
-        var t = tm.instance()
-        t.translation = curve.get_point_position(i)
-        path_tracers.add_child(t)
-        for j in range(1, steps+1):
-            t = tm.instance()
-            t.translation = curve.interpolate(i, float(j)/steps)
-            path_tracers.add_child(t)
-    # var cip = tm.instance()
-    # cip.translation = curve.get_point_in(1) + curve.get_point_position(1)
-    # cip.scale = Vector3(.5, .5, .5)
-    # path_tracers.add_child(cip)
-    # var cop = tm.instance()
-    # cop.translation = curve.get_point_out(1) + curve.get_point_position(1)
-    # cop.scale = Vector3(.5, .5, .5)
-    # path_tracers.add_child(cop)
+func attach_to_wrist(global_transform):
+    self.transform = global_transform
 
 # TODO (10 May 2019 sam): Deal with all the y_disp stuff in throw calculation
 # That is what will allow the users to add height to their throws, for blades

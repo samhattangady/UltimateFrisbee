@@ -19,7 +19,7 @@ script = ExtResource( 1 )
 curve = SubResource( 1 )
 
 [node name="PathFollow" type="PathFollow" parent="Path"]
-rotation_mode = 4
+rotation_mode = 0
 
 [node name="KinematicBody" type="KinematicBody" parent="Path/PathFollow"]
 
