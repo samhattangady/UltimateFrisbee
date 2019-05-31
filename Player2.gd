@@ -4,8 +4,8 @@ export var max_speed = 8
 export var acceleration = 10
 export var deceleration = 10
 export var MAX_ANGLE_WITHOUT_STOPPING = 60
-export var AT_DESTINATION_DISTANCE = 0.1
-export var DISC_CATCHING_DISTANCE = 5
+export var AT_DESTINATION_DISTANCE = 1.5
+export var DISC_CATCHING_DISTANCE = 3.0
 
 var current_direction = Vector3(1, 0, 0)
 var current_velocity = Vector3(-1, 0, 0)
@@ -51,32 +51,33 @@ func _ready():
 
 func _physics_process(delta):
     if self.current_state == PLAYER_STATE.RUNNING:
-        if self.check_if_at_destination():
-            pass
         self.recalculate_current_velocity(delta)
         self.move_and_slide(self.current_velocity, Vector3(0, -1, 0))
         self.check_if_at_disc()
         if self.current_velocity.length() > 1.0:
             self.animation_player.play('ArmatureAction')
+        if self.check_if_at_destination():
+            self.current_state = PLAYER_STATE.IDLE
+            self.animation_player.play('Idle')
+            return
 
 func set_disc(disc):
     self.disc = disc
 
 func check_if_at_destination():
+    return false
     return self.translation.distance_to(self.desired_destination) < self.AT_DESTINATION_DISTANCE
 
 func check_if_at_disc():
-    print(self.translation.distance_to(self.disc.translation))
-    if self.translation.distance_to(self.disc.path_follow.translation) < self.AT_DESTINATION_DISTANCE:
-        print('at disc')
+    if self.translation.distance_to(self.disc.get_position()) < self.AT_DESTINATION_DISTANCE:
         self.catch_disc()
 
 func catch_disc():
-    self.disc.throw_is_complete()
-    self.disc.translation = self.translation
+    self.set_deselected()
     self.has_disc = true
     self.current_velocity = Vector3(0, 0, 0)
     self.current_state = PLAYER_STATE.WITH_DISC
+    self.animation_player.play('Idle')
 
 func recalculate_current_velocity(delta):
     # If we are running in desired direction, accelerate to max_speed
@@ -137,9 +138,9 @@ func run_to_world_point(destination):
     self.current_state = PLAYER_STATE.RUNNING
 
 func disc_is_thrown(curve, throw_details):
-    if self.current_state == PLAYER_STATE.RUNNING:
-        var attack_point = self.calculate_attack_point(curve, throw_details)
-        self.run_to_world_point(attack_point)
+    var attack_point = self.calculate_attack_point(curve, throw_details)
+    if self.current_state == PLAYER_STATE.RUNNING or attack_point.time < 1.0:
+        self.run_to_world_point(attack_point.point)
 
 func calculate_attack_point(curve, throw_details):
     # We take different points along the flight of the disc, and measure the
@@ -152,7 +153,7 @@ func calculate_attack_point(curve, throw_details):
     # also requires us to constrain running to directions with y=0, and also figure
     # out how to add jumping into this calculation, both with regards to skying and
     # laying out.
-    var number_of_samples = 9
+    var number_of_samples = 30
     var best_point = -1
     var best_time_difference = pow(10, 10)
     for i in range(number_of_samples):
@@ -163,29 +164,41 @@ func calculate_attack_point(curve, throw_details):
         if abs(time_to_point - time_sample) < best_time_difference:
             best_time_difference = abs(time_to_point-time_sample)
             best_point = sample_point
-    return best_point
+    return {'point': best_point, 'time': best_time_difference}
 
 func get_time_to_point(point, pos, dir, vel):
     # Get the time it would take to move to a certain point
     # For further details, refer to `recalculate_current_velocity`
-    # We use the pos, dir and vel here so that we can be a little recursive
-    var direction_to_point = (point - pos).normalized()
+    # There are 3 possible states. Decelerating, accelerating, max_speed.
+    # The player could start in any one of these phases, and then move on to the
+    # next phase in the cycle.
+    var total_time = 0.0
+    var direction_to_point = (point-pos).normalized()
     var change_of_angle = abs(rad2deg(dir.angle_to(direction_to_point)))
-    if change_of_angle < 1 and vel.length() != 0:
-        return point.distance_to(pos) / vel.length()
-    if change_of_angle < MAX_ANGLE_WITHOUT_STOPPING:
-        var initial_velocity = vel.project(direction_to_point)
-        if initial_velocity.length() < self.max_speed:
-            # calculate time to reach max speed, and position at that time
-            var time_to_max = (self.max_speed-initial_velocity.length()) / self.acceleration
-            var distance_to_max = (pow(self.max_speed, 2) - pow(vel.length(), 2)) / (2*self.acceleration)
-            var pos_at_max = pos + direction_to_point*(distance_to_max)
-            return time_to_max + self.get_time_to_point(point, pos_at_max, direction_to_point, self.max_speed*direction_to_point)
-    else:
+    # State 1: Decelerating
+    if change_of_angle > MAX_ANGLE_WITHOUT_STOPPING:
+        # We need to calculate the point at which the velocity is 0
         # Chopstop / sliding
         var time_to_stop = (vel.length()) / self.deceleration
         var distance_to_stop = (-pow(vel.length(), 2)) / (2*self.deceleration)
-        var pos_at_stop = pos + dir*(distance_to_stop)
-        var new_dir = (point-pos_at_stop).normalized()
-        return time_to_stop + self.get_time_to_point(point, pos_at_stop, new_dir, Vector3(0, 0, 0))
+        pos += dir*(distance_to_stop)
+        dir = (point-pos).normalized()
+        vel = Vector3(0, 0, 0)
+        change_of_angle = abs(rad2deg(dir.angle_to(direction_to_point)))
+        total_time += time_to_stop
+    if change_of_angle <= MAX_ANGLE_WITHOUT_STOPPING:
+        vel = vel.project(direction_to_point)
+    # State 2: Accelerating
+    if vel.length() < self.max_speed:
+        # We need to calculate the time and distance to max_speed
+        var time_to_max = (self.max_speed-vel.length()) / self.acceleration
+        var distance_to_max = (pow(self.max_speed, 2) - pow(vel.length(), 2)) / (2*self.acceleration)
+        pos += direction_to_point*(distance_to_max)
+        dir = direction_to_point
+        vel = self.max_speed*dir
+        total_time += time_to_max
+    # State 3: At max speed. We don't need any checks at this point
+    var time_to_point = point.distance_to(pos) / self.max_speed
+    total_time +=  time_to_point
+    return total_time
 

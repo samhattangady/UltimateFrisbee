@@ -57,7 +57,6 @@ func _process(delta):
     if DEBUG:
         emit_signal('position_update', path_follow.translation)
     if currently_thrown and playing:
-        print('disc ', self.path_follow.translation) 
         update_offset(delta)
 
 func _input(event):
@@ -67,12 +66,21 @@ func _input(event):
         execute_throw(debug_previous_throw)
     if event.is_action_pressed('ui_accept'):
         execute_throw({
-            'end':Vector2(532, 208), 
-            'msecs':518, 
-            'start':Vector2(572, 431), 
-            'x_disp':97.806732, 
+            'end':Vector2(532, 208),
+            'msecs':518,
+            'start':Vector2(572, 431),
+            'x_disp':97.806732,
             'y_disp':-226.559036
         })
+
+func get_position():
+    # To get the world coordinates of the disc. When in the air, we want
+    # the path_follow.translation, but on the ground, we want the path.translation
+    # This might be a part of !TranslationError, Don't know.
+    if self.currently_thrown:
+        return self.path_follow.translation
+    else:
+        return self.path.translation
 
 func execute_throw(throw):
     # Check if end point meets ground
@@ -84,13 +92,13 @@ func execute_throw(throw):
     start_throw(throw, curve)
 
 func start_throw(throw, curve):
-    # FIXME (15 May 2019 sam): !TranslationError. See bottom
-    if number_of_throws != 0:
-        translation = -path.translation
-    number_of_throws += 1
     self.calculate_throw_speed(throw, curve)
 
 func start_throw_animation():
+    # FIXME (15 May 2019 sam): !TranslationError. See bottom
+    if self.number_of_throws != 0:
+        self.translation = -self.path.translation
+    self.number_of_throws += 1
     self.currently_thrown = true
     self.emit_signal('throw_started', self.path.curve, {
         'time': self.total_throw_time,
@@ -121,20 +129,29 @@ func update_offset(delta):
                                 self.current_min_speed)
     var offset = self.path_follow.unit_offset
     if offset >= 1.0:
-        self.throw_is_complete()
+        self.throw_is_grounded()
+
+func throw_is_grounded():
+    # Throw hits the ground
+    self.path_follow.unit_offset = 0.999
+    self.throw_is_complete()
 
 func throw_is_complete():
     self.currently_thrown = false
     # FIXME (15 May 2019 sam): !TranslationError. See bottom
-    # NOTE (22 May 2019 sam): Note that this logic will be adjusted once we have
-    # players catching the disc. At that point, we will just be using the players
-    # translation instead of bothering with path_follow etc.
-    self.path_follow.unit_offset = 0.999
     self.path.translation = self.path_follow.translation
     self.path_follow.unit_offset = 0.0
     self.throw_time_elapsed = 0.0
-    self.emit_signal('throw_complete', self.path.translation)
+    self.emit_signal('throw_complete', self.get_position())
     var actual_time = (OS.get_ticks_msec()-self.throw_start_time) / 1000.0
+
+func disc_is_reached():
+    # There are two cases here. Either the throw
+    # is caught, or the player approaches the fallen disc
+    # Case 1: Catching the disc
+    if self.currently_thrown:
+        self.throw_is_complete()
+    # Case 2: Player is at the fallen disc. No additional logic
 
 func calculate_throw_curve(throw_data):
     var end_point = get_point_in_world(throw_data['end'])
