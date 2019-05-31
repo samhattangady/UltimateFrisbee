@@ -9,7 +9,7 @@ albedo_color = Color( 0.196078, 0.623529, 0.14902, 0.607843 )
 points = PoolVector3Array( -1, 1, 1, 1, 1, -1, 1, 1, 1, -1, 1, -1, -1, -1, 1, 1, -1, -1, 1, -1, 1, -1, -1, -1, 1, 1, 1, -1, 1, -1, 1, 1, -1, -1, 1, 1, 1, -1, 1, -1, -1, -1, 1, -1, -1, -1, -1, 1, 1, 1, 1, -1, -1, 1, -1, 1, 1, 1, -1, 1, 1, 1, -1, -1, -1, -1, -1, 1, -1, 1, -1, -1 )
 
 [node name="Ground" type="MeshInstance"]
-transform = Transform( 34, 0, 0, 0, 0.01, 0, 0, 0, 100, 0, 0, 0 )
+transform = Transform( 70, 0, 0, 0, 0.01, 0, 0, 0, 200, 0, 0, 0 )
 mesh = SubResource( 1 )
 material/0 = SubResource( 2 )
 

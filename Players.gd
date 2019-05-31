@@ -6,18 +6,84 @@ var game_camera
 var selected_player
 var disc
 var players = []
-var PLAYER_PIXEL_RADIUS = 25
+var PLAYER_PIXEL_RADIUS = 100
+var HEX_SPACING = 10.0
 
 func _ready():
     var player_scene = preload('res://Player2.tscn')
-    for i in range(number_of_players):
-        var p = player_scene.instance()
-        p.translation = Vector3(0.0, 0.0, -10.0*i)
-        p.scale = Vector3(2, 2, 2)
-        if i == 0:
-            p.has_disc = true
-        self.add_child(p)
-        self.players.append(p)
+    # for i in range(number_of_players):
+    #     var p = player_scene.instance()
+    #     p.translation = Vector3(0.0, 0.0, -10.0*i)
+    #     p.scale = Vector3(2, 2, 2)
+    #     if i == 0:
+    #         p.has_disc = true
+    #     self.add_child(p)
+    #     self.players.append(p)
+    self.hex_with_back_2()
+
+func hex_with_back_1():
+    var player_scene = preload('res://Player2.tscn')
+    var back_1 = player_scene.instance()
+    back_1.has_disc = true
+    back_1.translation = Vector3 (0, 0, 0)
+    self.add_child(back_1)
+    self.players.append(back_1)
+    var back_2 = player_scene.instance()
+    back_2.translation = Vector3 (2.0*HEX_SPACING, 0.0, -0.0*HEX_SPACING)
+    self.add_child(back_2)
+    self.players.append(back_2)
+    var wing_1 = player_scene.instance()
+    wing_1.translation = Vector3 (-1.5*HEX_SPACING, 0.0, -1.5*HEX_SPACING)
+    self.add_child(wing_1)
+    self.players.append(wing_1)
+    var hat = player_scene.instance()
+    hat.translation = Vector3 (1.0*HEX_SPACING, 0.0, -1.5*HEX_SPACING)
+    self.add_child(hat)
+    self.players.append(hat)
+    var wing_2 = player_scene.instance()
+    wing_2.translation = Vector3 (3.5*HEX_SPACING, 0.0, -1.5*HEX_SPACING)
+    self.add_child(wing_2)
+    self.players.append(wing_2)
+    var front_1 = player_scene.instance()
+    front_1.translation = Vector3 (-0.5*HEX_SPACING, 0.0, -3.0*HEX_SPACING)
+    self.add_child(front_1)
+    self.players.append(front_1)
+    var front_2 = player_scene.instance()
+    front_2.translation = Vector3 (2.0*HEX_SPACING, 0.0, -3.0*HEX_SPACING)
+    self.add_child(front_2)
+    self.players.append(front_2)
+
+func hex_with_back_2():
+    var player_scene = preload('res://Player2.tscn')
+    var back_1 = player_scene.instance()
+    back_1.has_disc = true
+    back_1.translation = Vector3 (0, 0, 0)
+    self.add_child(back_1)
+    self.players.append(back_1)
+    var back_2 = player_scene.instance()
+    back_2.translation = Vector3 (-2.0*HEX_SPACING, 0.0, -0.0*HEX_SPACING)
+    self.add_child(back_2)
+    self.players.append(back_2)
+    var wing_1 = player_scene.instance()
+    wing_1.translation = Vector3 (-3.5*HEX_SPACING, 0.0, -1.5*HEX_SPACING)
+    self.add_child(wing_1)
+    self.players.append(wing_1)
+    var hat = player_scene.instance()
+    hat.translation = Vector3 (-1.0*HEX_SPACING, 0.0, -1.5*HEX_SPACING)
+    self.add_child(hat)
+    self.players.append(hat)
+    var wing_2 = player_scene.instance()
+    wing_2.translation = Vector3 (1.5*HEX_SPACING, 0.0, -1.5*HEX_SPACING)
+    self.add_child(wing_2)
+    self.players.append(wing_2)
+    var front_1 = player_scene.instance()
+    front_1.translation = Vector3 (-2.0*HEX_SPACING, 0.0, -3.0*HEX_SPACING)
+    self.add_child(front_1)
+    self.players.append(front_1)
+    var front_2 = player_scene.instance()
+    front_2.translation = Vector3 (0.0*HEX_SPACING, 0.0, -3.0*HEX_SPACING)
+    self.add_child(front_2)
+    self.players.append(front_2)
 
 func set_game_camera(camera):
     self.game_camera = camera
@@ -76,3 +142,5 @@ func get_point_in_world(position):
     var point = get_world().direct_space_state.intersect_ray(start_point, end_point)
     return point
 
+# TODO (31 May 2019 sam): So there is a problem with using direct pixel values. Pixel
+# has very high hdpi or whatever, so the pixel ratios are terribly small, and unclickable# Need to see how to fix that.

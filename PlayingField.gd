@@ -19,11 +19,11 @@ func _ready():
     self.game_camera.make_current()
     self.players_controller.set_game_camera(self.game_camera)
     self.players_controller.set_disc(self.disc)
+    self.input_controls.connect('set_pause_state', self.disc, 'set_pause_state')
     self.input_controls.connect('pan_start', self.game_camera, 'pan_start')
     self.input_controls.connect('pan_camera', self.game_camera, 'pan_camera')
     self.input_controls.connect('throw', self.disc, 'execute_throw')
     self.input_controls.connect('tap_location', self.players_controller, 'handle_screen_tap')
-    # self.input_controls.connect('mark_point', self.player, 'run_to_screen_point')
     # self.disc.connect('throw_started', self.player, 'disc_is_thrown')
     self.disc.connect('throw_started', self.world_debug, 'throw_calculated')
     self.disc.connect('throw_complete', self.game_camera, 'throw_complete')
@@ -34,6 +34,7 @@ func _ready():
 
 func connect_player_signals():
     for p in self.players_controller.players:
+        self.input_controls.connect('set_pause_state', p, 'set_pause_state')
         self.input_controls.connect('throw', p, 'start_throw_animation')
         self.disc.connect('throw_started', p, 'disc_is_thrown')
         p.connect('throw_animation_complete', self.disc, 'start_throw_animation')

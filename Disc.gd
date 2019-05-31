@@ -7,6 +7,7 @@ var path_follow = PathFollow
 var path = Path
 var random = RandomNumberGenerator
 var disc = KinematicBody
+var pause_state
 
 var debug_previous_throw = {}
 
@@ -56,7 +57,7 @@ func _ready():
 func _process(delta):
     if DEBUG:
         emit_signal('position_update', path_follow.translation)
-    if currently_thrown and playing:
+    if currently_thrown and !self.pause_state:
         update_offset(delta)
 
 func _input(event):
@@ -210,6 +211,9 @@ func get_point_in_world(position):
 func attach_to_wrist(global_transform):
     self.translation = global_transform.basis[0]
     print(self.translation)
+
+func set_pause_state(state):
+    self.pause_state = state
 
 # TODO (10 May 2019 sam): Deal with all the y_disp stuff in throw calculation
 # That is what will allow the users to add height to their throws, for blades

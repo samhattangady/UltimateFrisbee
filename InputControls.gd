@@ -7,12 +7,16 @@ var is_throwing = false
 var is_panning = false
 var pan_start = Vector2(0, 0)
 var throw_start_time = 0
+var pause_button
+var buttons = []
+var pause_state
 
 signal throw(throw_data)
 signal pan_start()
 signal pan_camera(pan_start, pan_end, origin)
 signal mark_point(point)
 signal tap_location(point)
+signal set_pause_state(state)
 
 var disc_points = Vector2(0, 0)
 var throw_radius = 100
@@ -20,7 +24,16 @@ var throw_radius_buffer = 40
 var draw_throw_circle = true
 
 func _ready():
-    calculate_disc_points()
+    self.calculate_disc_points()
+    self.pause_state = false
+    self.pause_button = self.get_node('PauseButton')
+    self.buttons.append(self.pause_button)
+    self.pause_button.connect('button_up', self, 'handle_pause_button')
+
+func handle_pause_button():
+    self.pause_state = !self.pause_state
+    print('game paused: ', self.pause_state)
+    self.emit_signal('set_pause_state', self.pause_state)
 
 func _input(event):
     if event is InputEventMouseButton and event.get_button_index() == BUTTON_LEFT:
@@ -38,7 +51,15 @@ func _input(event):
         else:
             if len(drag_path) == 0:
                 # Player is tapping. Not dragging
-                self.emit_signal('tap_location', event.position)
+                # Check that no button is being tapped
+                var button_tapped = false
+                for button in self.buttons:
+                    if button.get_rect().has_point(event.position):
+                        button_tapped = true
+                        break
+                print('button tapped: ', button_tapped)
+                if !button_tapped:
+                    self.emit_signal('tap_location', event.position)
             if self.is_throwing:
                 # TODO (06 May 2019 sam): Make sure there are
                 # atleast 3-4 points. Or calculate length of
@@ -47,6 +68,7 @@ func _input(event):
                 # cause for DivisionByZeroError to be cropping
                 # up here.
                 if len(self.throw_path) > 3:
+                    print('throwing inputcontrols')
                     var throw_data = self.identify_throw(throw_path)
                     throw_data['msecs'] = OS.get_ticks_msec() - self.throw_start_time
                     self.emit_signal("throw", throw_data)
