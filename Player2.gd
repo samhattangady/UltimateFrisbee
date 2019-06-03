@@ -25,7 +25,7 @@ var skeleton
 var wrist_rest_position
 var animation_player
 var selected_marker
-var has_disc
+var has_disc = false
 var is_selected
 var disc_calculator
 var current_state
@@ -49,7 +49,13 @@ func _ready():
     self.right_hand = self.skeleton.find_bone('Wrist.R')
     self.wrist_rest_position = self.skeleton.get_bone_transform(right_hand)
     self.animation_player.connect('animation_finished', self, 'handle_animation_completion')
+    self.animation_player.connect('animation_started', self, 'debug_animation_start')
     self.current_state = PLAYER_STATE.IDLE
+
+func debug_animation_start(anim_name):
+    if anim_name == 'Idle':
+        return
+    print('player animation started ', anim_name)
 
 func _physics_process(delta):
     if !self.pause_state:
@@ -118,11 +124,14 @@ func start_throw_animation(throw_data):
     # TODO (30 May 2019 sam): Don't like this very much. The signal shouldn't be
     # directly connected to this method. See what the better way of doing this would be.
     if self.has_disc:
+        print('player has disc is throwing')
+        print(throw_data.throw)
         self.animation_player.play(throw_data['throw'], -1, 3.0, false)
         self.current_state = PLAYER_STATE.THROWING
         # TODO (31 May 2019 sam): Add some sort of timer here to switch the state to idle
 
 func handle_animation_completion(anim_name):
+    print('player animation complete ', anim_name)
     if anim_name == 'Forehand' or anim_name == 'Backhand':
         self.emit_signal('throw_animation_complete')
         self.has_disc = false

@@ -6,20 +6,22 @@ var game_camera
 var selected_player
 var disc
 var players = []
-var PLAYER_PIXEL_RADIUS = 100
+var PLAYER_PIXEL_RADIUS = 25
 var HEX_SPACING = 10.0
 
 func _ready():
+    self.two_players()
+
+func two_players():
     var player_scene = preload('res://Player2.tscn')
-    # for i in range(number_of_players):
-    #     var p = player_scene.instance()
-    #     p.translation = Vector3(0.0, 0.0, -10.0*i)
-    #     p.scale = Vector3(2, 2, 2)
-    #     if i == 0:
-    #         p.has_disc = true
-    #     self.add_child(p)
-    #     self.players.append(p)
-    self.hex_with_back_2()
+    for i in range(number_of_players):
+        var p = player_scene.instance()
+        p.translation = Vector3(0.0, 0.0, -10.0*i)
+        p.scale = Vector3(2, 2, 2)
+        if i == 0:
+            p.has_disc = true
+        self.add_child(p)
+        self.players.append(p)
 
 func hex_with_back_1():
     var player_scene = preload('res://Player2.tscn')
@@ -125,7 +127,7 @@ func is_player_being_selected(point):
 func deselect_all_players():
     for player in self.players:
         player.set_deselected()
-    
+
 func get_point_in_world(position):
     # converts point on screen to point in world
     # TODO (08 May 2019 sam): Camera has project_position. See if it's better
