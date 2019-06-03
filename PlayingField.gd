@@ -4,8 +4,6 @@ var input_controls
 var game_camera
 var frisbee_things
 var disc
-var player
-var player2
 var world_debug
 var players_controller
 
@@ -23,10 +21,13 @@ func _ready():
     self.input_controls.connect('pan_start', self.game_camera, 'pan_start')
     self.input_controls.connect('pan_camera', self.game_camera, 'pan_camera')
     self.input_controls.connect('throw', self.disc, 'execute_throw')
+    self.input_controls.connect('throw', self.players_controller, 'start_throw')
     self.input_controls.connect('tap_location', self.players_controller, 'handle_screen_tap')
     # self.disc.connect('throw_started', self.player, 'disc_is_thrown')
     self.disc.connect('throw_started', self.world_debug, 'throw_calculated')
+    self.disc.connect('throw_started', self.input_controls, 'throw_started')
     self.disc.connect('throw_complete', self.game_camera, 'throw_complete')
+    self.game_camera.connect('camera_movement_completed', self.input_controls, 'camera_movement_completed')
     self.connect_player_signals()
     # self.player.connect('attack_point', self.world_debug, 'attack_point_calculated')
     # To start off with the camera focussed on the disc.
@@ -35,9 +36,9 @@ func _ready():
 func connect_player_signals():
     for p in self.players_controller.players:
         self.input_controls.connect('set_pause_state', p, 'set_pause_state')
-        self.input_controls.connect('throw', p, 'start_throw_animation')
         self.disc.connect('throw_started', p, 'disc_is_thrown')
         p.connect('throw_animation_complete', self.disc, 'start_throw_animation')
+        p.connect('disc_is_caught', self.players_controller, 'disc_is_caught')
         # p.connect('thrower_arm_position', self.disc, 'attach_to_wrist')
 
 func check_player_selected():

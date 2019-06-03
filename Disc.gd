@@ -241,3 +241,8 @@ func set_pause_state(state):
 # TODO (23 May 2019 sam): On slower throws, we need to add more height to the throws
 # and give them a more floaty trajectory. Right now, the timing is good, but the path
 # looks a little off.
+
+# FIXME (03 Jun 2019 sam): There is a bug where when we make a throw that ends out of
+# bounds, the previous throw is repeated. Or something like that. Need to change that
+# into something like a cancellation or rejection of input. There are multiple ways that
+# can probably be dealt with.

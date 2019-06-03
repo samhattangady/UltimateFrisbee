@@ -37,6 +37,8 @@ var debug_starting_time
 signal thrower_arm_position(transform)
 # Signal to start throw
 signal throw_animation_complete()
+# Signal to say that they have caught the disc
+signal disc_is_caught(player)
 
 func _ready():
     self.animation_player = self.get_node('AnimationPlayer')
@@ -49,52 +51,55 @@ func _ready():
     self.right_hand = self.skeleton.find_bone('Wrist.R')
     self.wrist_rest_position = self.skeleton.get_bone_transform(right_hand)
     self.animation_player.connect('animation_finished', self, 'handle_animation_completion')
-    self.animation_player.connect('animation_started', self, 'debug_animation_start')
     self.current_state = PLAYER_STATE.IDLE
-
-func debug_animation_start(anim_name):
-    if anim_name == 'Idle':
-        return
-    print('player animation started ', anim_name)
 
 func _physics_process(delta):
     if !self.pause_state:
         if self.current_state == PLAYER_STATE.RUNNING:
             self.recalculate_current_velocity(delta)
             self.move_and_slide(self.current_velocity, Vector3(0, -1, 0))
-        self.check_if_disc_is_catchable()
         if self.current_velocity.length() > 1.0:
             self.animation_player.play('ArmatureAction')
+        if self.check_if_disc_is_catchable():
+            self.catch_disc()
         if self.check_if_at_destination():
-            self.current_state = PLAYER_STATE.IDLE
-            self.animation_player.play('Idle')
+            self.stop_running()
 
 func set_disc(disc):
     self.disc = disc
 
 func check_if_at_destination():
-    # return false
-    return self.translation.distance_to(self.desired_destination) < self.AT_DESTINATION_DISTANCE
+    if self.current_state == PLAYER_STATE.RUNNING:
+        return self.translation.distance_to(self.desired_destination) < self.AT_DESTINATION_DISTANCE
+    return false
+
+func stop_running():
+    self.current_velocity = Vector3(0, 0, 0)
+    self.animation_player.play('Idle')
+    self.current_state = PLAYER_STATE.IDLE
 
 func check_if_disc_is_catchable():
-    if self.current_state == PLAYER_STATE.THROWN or self.current_state == PLAYER_STATE.THROWING:
+    if self.current_state == PLAYER_STATE.THROWN or self.current_state == PLAYER_STATE.THROWING or self.current_state == PLAYER_STATE.WITH_DISC:
         return false
-    if self.translation.distance_to(self.disc.get_position()) < self.AT_DESTINATION_DISTANCE:
-        self.catch_disc()
+    return self.translation.distance_to(self.disc.get_position()) < self.AT_DESTINATION_DISTANCE
 
 func catch_disc():
     self.set_deselected()
-    self.disc.disc_is_reached()
+    # self.assign_disc_possession()
     self.has_disc = true
-    self.current_velocity = Vector3(0, 0, 0)
     self.current_state = PLAYER_STATE.WITH_DISC
+    self.disc.disc_is_reached()
+    self.current_velocity = Vector3(0, 0, 0)
     self.animation_player.play('Idle')
+    self.emit_signal('disc_is_caught', self)
 
 func recalculate_current_velocity(delta):
     # If we are running in desired direction, accelerate to max_speed
     # Otherwise, depending on the angle change,
     #   0-60: Maintain the component of speed along that direction.
     #   >60: decelerate to 0, and change to desired direction
+    # TODO (03 Jun 2019 sam): If the player is bumped off course, then they keep
+    # running to infinity. Ideally, they should be adjusting course.
     var change_of_angle = abs(rad2deg(self.current_direction.angle_to(self.desired_direction)))
     if change_of_angle < self.MAX_ANGLE_WITHOUT_STOPPING:
         self.current_velocity = self.current_velocity.project(self.desired_direction)
@@ -121,17 +126,11 @@ func update_arm_position():
     self.emit_signal('thrower_arm_position', global_transform)
 
 func start_throw_animation(throw_data):
-    # TODO (30 May 2019 sam): Don't like this very much. The signal shouldn't be
-    # directly connected to this method. See what the better way of doing this would be.
-    if self.has_disc:
-        print('player has disc is throwing')
-        print(throw_data.throw)
-        self.animation_player.play(throw_data['throw'], -1, 3.0, false)
-        self.current_state = PLAYER_STATE.THROWING
-        # TODO (31 May 2019 sam): Add some sort of timer here to switch the state to idle
+    self.animation_player.play(throw_data['throw'], -1, 3.0, false)
+    self.current_state = PLAYER_STATE.THROWING
+    # TODO (31 May 2019 sam): Add some sort of timer here to switch the state to idle
 
 func handle_animation_completion(anim_name):
-    print('player animation complete ', anim_name)
     if anim_name == 'Forehand' or anim_name == 'Backhand':
         self.emit_signal('throw_animation_complete')
         self.has_disc = false
@@ -223,3 +222,9 @@ func set_pause_state(state):
     self.pause_state = state
     self.animation_player.set_active(!self.pause_state)
 
+func assign_disc_possession():
+    self.has_disc = true
+    self.current_state = PLAYER_STATE.WITH_DISC
+
+func set_idle():
+    self.current_state = PLAYER_STATE.IDLE

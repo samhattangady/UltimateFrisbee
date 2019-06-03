@@ -7,6 +7,7 @@ var is_throwing = false
 var is_panning = false
 var pan_start = Vector2(0, 0)
 var throw_start_time = 0
+var accepting_input = true
 var pause_button
 var buttons = []
 var pause_state
@@ -30,12 +31,34 @@ func _ready():
     self.buttons.append(self.pause_button)
     self.pause_button.connect('button_up', self, 'handle_pause_button')
 
+func camera_movement_completed():
+    self.allow_input()
+
+func throw_started(curve, throw_details):
+    self.block_input()
+
+func throw_complete(position):
+    self.allow_input()
+
+func block_input():
+    self.accepting_input = false
+    self.mouse_down = false
+    self.is_throwing = false
+    self.is_panning = false
+    self.throw_path = []
+    self.drag_path = []
+
+func allow_input():
+    self.accepting_input = true
+
 func handle_pause_button():
     self.pause_state = !self.pause_state
     print('game paused: ', self.pause_state)
     self.emit_signal('set_pause_state', self.pause_state)
 
 func _input(event):
+    if !self.accepting_input:
+        return
     if event is InputEventMouseButton and event.get_button_index() == BUTTON_LEFT:
         if event.is_pressed():
             self.throw_path = []
@@ -57,7 +80,6 @@ func _input(event):
                     if button.get_rect().has_point(event.position):
                         button_tapped = true
                         break
-                print('button tapped: ', button_tapped)
                 if !button_tapped:
                     self.emit_signal('tap_location', event.position)
             if self.is_throwing:

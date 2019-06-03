@@ -10,8 +10,15 @@ var camera_height = 60
 var camera_z_offset =30 
 var camera_x_offset = 0
 
+var camera_tween
+
+signal camera_movement_completed()
+
 func _ready():
     calculate_start_origin()
+    self.camera_tween = Tween.new()
+    self.add_child(self.camera_tween)
+    self.camera_tween.connect('tween_completed', self, 'camera_movement_complete')
 
 func pan_camera(pan_start, pan_end, origin):
     # TODO (15 May 2019 sam): Prevent panning when the disc is in the air?
@@ -55,10 +62,21 @@ func calculate_start_origin():
 func throw_complete(position):
     # We want the camera to center the disc to the point 3/4th y and 1/2 x
     # `start_origin` is already fixed at that point. So that's what we use
-    start_origin = position
-    translation.x = start_origin.x+camera_x_offset
-    translation.y = start_origin.y+camera_height
-    translation.z = start_origin.z+camera_z_offset
+    self.start_origin = position
+    var start_translation = self.translation
+    var end_translation = Vector3(start_origin.x+camera_x_offset, start_origin.y+camera_height, start_origin.z+camera_z_offset)
+    # TODO (03 Jun 2019 sam): See what is the best tween to use.
+    self.camera_tween.interpolate_property(self, 'translation', 
+            start_translation, end_translation, 
+            0.6, Tween.TRANS_ELASTIC, Tween.EASE_IN_OUT, 0.0)
+    print('starting tween')
+    self.camera_tween.start()
+    # translation.x = start_origin.x+camera_x_offset
+    # translation.y = start_origin.y+camera_height
+    # translation.z = start_origin.z+camera_z_offset
+
+func camera_movement_complete(obj, node_path):
+    self.emit_signal('camera_movement_completed')
 
 
 # TODO (22 May 2019 sam): There may be different camera movements that we want to
