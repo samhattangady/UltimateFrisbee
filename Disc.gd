@@ -204,7 +204,8 @@ func get_point_in_world(position):
     # to ensure that the ray is long enough to intersect with the ground in all
     # cases. See if there is a better way to do this.
     var end_point = start_point + 10000*camera.project_ray_normal(position)
-    var point = get_world().direct_space_state.intersect_ray(start_point, end_point)
+    var point = get_world().direct_space_state.intersect_ray(start_point, end_point,
+            [], 2)
     if not point: return
     return point.position
 

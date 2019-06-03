@@ -5,7 +5,7 @@ export var acceleration = 10
 export var deceleration = 10
 export var MAX_ANGLE_WITHOUT_STOPPING = 60
 export var AT_DESTINATION_DISTANCE = 1.5
-export var DISC_CATCHING_DISTANCE = 3.0
+export var DISC_CATCHING_DISTANCE = 1.0
 
 var current_direction = Vector3(1, 0, 0)
 var current_velocity = Vector3(-1, 0, 0)
@@ -30,6 +30,7 @@ var is_selected
 var disc_calculator
 var current_state
 var pause_state
+var centre_point
 
 var debug_starting_time
 
@@ -52,6 +53,7 @@ func _ready():
     self.wrist_rest_position = self.skeleton.get_bone_transform(right_hand)
     self.animation_player.connect('animation_finished', self, 'handle_animation_completion')
     self.current_state = PLAYER_STATE.IDLE
+    self.centre_point = self.get_node('CollisionShape')
 
 func _physics_process(delta):
     if !self.pause_state:
@@ -81,7 +83,7 @@ func stop_running():
 func check_if_disc_is_catchable():
     if self.current_state == PLAYER_STATE.THROWN or self.current_state == PLAYER_STATE.THROWING or self.current_state == PLAYER_STATE.WITH_DISC:
         return false
-    return self.translation.distance_to(self.disc.get_position()) < self.AT_DESTINATION_DISTANCE
+    return (self.centre_point.translation + self.translation).distance_to(self.disc.get_position()) < self.DISC_CATCHING_DISTANCE
 
 func catch_disc():
     self.set_deselected()
@@ -169,13 +171,15 @@ func calculate_attack_point(curve, throw_details):
     # also requires us to constrain running to directions with y=0, and also figure
     # out how to add jumping into this calculation, both with regards to skying and
     # laying out.
-    var number_of_samples = 30
+    var number_of_samples = 100
     var best_point = -1
     var best_time_difference = pow(10, 10)
     for i in range(number_of_samples):
         var time_sample = (i+1) * throw_details['time'] / number_of_samples
         var offset_sample = self.disc_calculator.get_disc_offset(time_sample, throw_details['time'], throw_details['max_speed'], throw_details['min_speed'])
         var sample_point = curve.interpolate_baked(offset_sample * curve.get_baked_length())
+        # Clamp point to ground
+        sample_point.y = 0.0
         var time_to_point = self.get_time_to_point(sample_point, self.translation, self.current_direction, self.current_velocity)
         if abs(time_to_point - time_sample) < best_time_difference:
             best_time_difference = abs(time_to_point-time_sample)

@@ -6,8 +6,8 @@ var start_origin = Vector3(0, 0, 0)
 
 # FIXME (22 May 2019 sam): Currently these are hardcoded into the script. It should
 # instead be taken from whatever values were set in the editor.
-var camera_height = 60
-var camera_z_offset =30 
+var camera_height = 30
+var camera_z_offset = 15 
 var camera_x_offset = 0
 
 var camera_tween
