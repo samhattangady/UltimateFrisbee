@@ -6,8 +6,8 @@ var playing = true
 var path_follow = PathFollow
 var path = Path
 var random = RandomNumberGenerator
-var disc = KinematicBody
 var pause_state
+var body
 
 var debug_previous_throw = {}
 
@@ -47,12 +47,13 @@ signal throw_started(curve, throw_details)
 signal throw_complete(position)
 
 func _ready():
-    path_follow = get_node('Path/PathFollow')
-    path = get_node('Path')
-    disc = get_node('Path/PathFollow/KinematicBody')
-    random = RandomNumberGenerator.new()
-    DISC_CALCULATOR = load('DiscCalculator.gd').new()
-    emit_signal('throw_complete', path.translation)
+    self.path_follow = self.get_node('Path/PathFollow')
+    self.path = self.get_node('Path')
+    self.body = self.get_node('Path/PathFollow/DiscKinematicBody')
+    self.random = RandomNumberGenerator.new()
+    self.DISC_CALCULATOR = load('DiscCalculator.gd').new()
+    self.emit_signal('throw_complete', self.path.translation)
+    print(self.name, ' ready')
 
 func _process(delta):
     if DEBUG:
@@ -209,8 +210,8 @@ func get_point_in_world(position):
     if not point: return
     return point.position
 
-func attach_to_wrist(global_transform):
-    self.translation = global_transform.basis[0]
+func attach_to_wrist(pos):
+    self.translation = pos.origin
     print(self.translation)
 
 func set_pause_state(state):

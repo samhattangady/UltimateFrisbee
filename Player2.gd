@@ -30,9 +30,10 @@ var is_selected
 var disc_calculator
 var current_state
 var pause_state
-var centre_point
+var catching_area
 
 var debug_starting_time
+var debug=true
 
 # Signal to attach the disc to the throwers arm
 signal thrower_arm_position(transform)
@@ -53,9 +54,13 @@ func _ready():
     self.wrist_rest_position = self.skeleton.get_bone_transform(right_hand)
     self.animation_player.connect('animation_finished', self, 'handle_animation_completion')
     self.current_state = PLAYER_STATE.IDLE
-    self.centre_point = self.get_node('CollisionShape')
+    self.catching_area = self.get_node('CatchingArea')
 
 func _physics_process(delta):
+    if debug:
+        self.emit_signal('thrower_arm_position', [self.get_wrist_position(), self.transform])
+        self.rotation.y += 0.01
+        return
     if !self.pause_state:
         if self.current_state == PLAYER_STATE.RUNNING:
             self.recalculate_current_velocity(delta)
@@ -66,6 +71,17 @@ func _physics_process(delta):
             self.catch_disc()
         if self.check_if_at_destination():
             self.stop_running()
+        if self.current_state == PLAYER_STATE.THROWING:
+            self.emit_signal('thrower_arm_position', self.skeleton.get_bone_transform(self.right_hand))
+
+func get_wrist_position():
+    # The position of each bone is in relation to its parent. So if I want to get the
+    # position of the final bone, that would be the sum of all the origins
+    var chain = [ 'Spine', 'Chest', 'Shoulder.R', 'UpperArm.R', 'LowerArm.R', 'Wrist.R']
+    var relative_transform = self.translation # self.get_node('Armature').translation
+    for bone in chain:
+        relative_transform += self.skeleton.get_bone_global_pose(self.skeleton.find_bone(bone)).origin
+    return relative_transform
 
 func set_disc(disc):
     self.disc = disc
@@ -83,9 +99,10 @@ func stop_running():
 func check_if_disc_is_catchable():
     if self.current_state == PLAYER_STATE.THROWN or self.current_state == PLAYER_STATE.THROWING or self.current_state == PLAYER_STATE.WITH_DISC:
         return false
-    return (self.centre_point.translation + self.translation).distance_to(self.disc.get_position()) < self.DISC_CATCHING_DISTANCE
+    return self.catching_area.overlaps_body(self.disc.body)
 
 func catch_disc():
+    # !AnimationHook Catching the disc
     self.set_deselected()
     # self.assign_disc_possession()
     self.has_disc = true

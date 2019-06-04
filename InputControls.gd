@@ -90,7 +90,6 @@ func _input(event):
                 # cause for DivisionByZeroError to be cropping
                 # up here.
                 if len(self.throw_path) > 3:
-                    print('throwing inputcontrols')
                     var throw_data = self.identify_throw(throw_path)
                     throw_data['msecs'] = OS.get_ticks_msec() - self.throw_start_time
                     self.emit_signal("throw", throw_data)

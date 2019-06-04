@@ -69,7 +69,6 @@ func throw_complete(position):
     self.camera_tween.interpolate_property(self, 'translation', 
             start_translation, end_translation, 
             0.6, Tween.TRANS_ELASTIC, Tween.EASE_IN_OUT, 0.0)
-    print('starting tween')
     self.camera_tween.start()
     # translation.x = start_origin.x+camera_x_offset
     # translation.y = start_origin.y+camera_height

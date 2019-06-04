@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=2]
+[gd_scene load_steps=16 format=2]
 
 [ext_resource path="res://Player2.gd" type="Script" id=1]
 [ext_resource path="res://assets/Material.material" type="Material" id=2]
@@ -891,8 +891,16 @@ tracks/19/keys = PoolRealArray( 0, 1, -5.21541e-08, -1.3411e-07, -3.72529e-08, -
 flags_transparent = true
 albedo_color = Color( 1, 0.960784, 0.4, 0.470588 )
 
+[sub_resource type="BoxShape" id=11]
+
+[sub_resource type="CubeMesh" id=12]
+
+[sub_resource type="SpatialMaterial" id=13]
+flags_transparent = true
+albedo_color = Color( 0.0705882, 0.160784, 0.427451, 0.490196 )
+
 [node name="Player2" type="KinematicBody"]
-transform = Transform( -2, 0, -3.01992e-07, 0, 2, 0, 3.01992e-07, 0, -2, 0, 0, 0 )
+transform = Transform( -1, 0, -1.50996e-07, 0, 1, 0, 1.50996e-07, 0, -1, 0, 0, 0 )
 script = ExtResource( 1 )
 
 [node name="Armature" type="Spatial" parent="."]
@@ -1000,9 +1008,6 @@ bones/18/bound_children = [  ]
 mesh = SubResource( 1 )
 material/0 = null
 
-[node name="Point" type="OmniLight" parent="."]
-transform = Transform( 1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, -1.94932, 3.95245, 2.85861 )
-
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 anims/ArmatureAction = SubResource( 2 )
 anims/ArmatureAction.001 = SubResource( 3 )
@@ -1020,3 +1025,14 @@ transform = Transform( 1, 0, 0, 0, 0.01, 0, 0, 0, 1, 0, 0, 0 )
 visible = false
 mesh = SubResource( 9 )
 material/0 = SubResource( 10 )
+
+[node name="CatchingArea" type="Area" parent="."]
+visible = false
+
+[node name="CollisionShape" type="CollisionShape" parent="CatchingArea"]
+transform = Transform( 1, 0, 0, 0, -4.37114e-08, -2, 0, 1, -8.74228e-08, 0, 2, 0.5 )
+shape = SubResource( 11 )
+
+[node name="MeshInstance" type="MeshInstance" parent="CatchingArea/CollisionShape"]
+mesh = SubResource( 12 )
+material/0 = SubResource( 13 )

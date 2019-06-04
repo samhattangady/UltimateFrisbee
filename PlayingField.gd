@@ -39,7 +39,7 @@ func connect_player_signals():
         self.disc.connect('throw_started', p, 'disc_is_thrown')
         p.connect('throw_animation_complete', self.disc, 'start_throw_animation')
         p.connect('disc_is_caught', self.players_controller, 'disc_is_caught')
-        # p.connect('thrower_arm_position', self.disc, 'attach_to_wrist')
+        p.connect('thrower_arm_position', self.disc, 'attach_to_wrist')
 
 func check_player_selected():
     pass
