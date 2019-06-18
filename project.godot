@@ -25,6 +25,9 @@ settings/stdout/verbose_stdout=true
 
 [display]
 
+window/size/width=411
+window/size/height=731
+window/dpi/allow_hidpi=true
 window/handheld/orientation="portrait"
 
 [rendering]

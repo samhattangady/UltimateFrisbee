@@ -19,6 +19,7 @@ enum PLAYER_STATE {
     THROWING,
     THROWN,
 }
+var player_model
 var right_hand
 var disc
 var skeleton
@@ -41,6 +42,7 @@ signal thrower_arm_position(transform)
 signal throw_animation_complete()
 # Signal to say that they have caught the disc
 signal disc_is_caught(player)
+signal try_to_catch_disc(player)
 
 func _ready():
     self.animation_player = self.get_node('AnimationPlayer')
@@ -57,10 +59,6 @@ func _ready():
     self.catching_area = self.get_node('CatchingArea')
 
 func _physics_process(delta):
-    if debug:
-        self.emit_signal('thrower_arm_position', [self.get_wrist_position(), self.transform])
-        self.rotation.y += 0.01
-        return
     if !self.pause_state:
         if self.current_state == PLAYER_STATE.RUNNING:
             self.recalculate_current_velocity(delta)
@@ -68,20 +66,17 @@ func _physics_process(delta):
         if self.current_velocity.length() > 1.0:
             self.animation_player.play('ArmatureAction')
         if self.check_if_disc_is_catchable():
-            self.catch_disc()
+            self.try_to_catch_disc()
         if self.check_if_at_destination():
             self.stop_running()
         if self.current_state == PLAYER_STATE.THROWING:
-            self.emit_signal('thrower_arm_position', self.skeleton.get_bone_transform(self.right_hand))
+            self.emit_signal('thrower_arm_position', self.get_wrist_position())
 
 func get_wrist_position():
-    # The position of each bone is in relation to its parent. So if I want to get the
-    # position of the final bone, that would be the sum of all the origins
-    var chain = [ 'Spine', 'Chest', 'Shoulder.R', 'UpperArm.R', 'LowerArm.R', 'Wrist.R']
-    var relative_transform = self.translation # self.get_node('Armature').translation
-    for bone in chain:
-        relative_transform += self.skeleton.get_bone_global_pose(self.skeleton.find_bone(bone)).origin
-    return relative_transform
+    var chain = ['Wrist.R']
+    var relative_translation = self.translation + self.get_node('Armature').translation
+    relative_translation += self.skeleton.get_bone_global_pose(self.right_hand).origin
+    return [relative_translation, self.transform]
 
 func set_disc(disc):
     self.disc = disc
@@ -101,16 +96,18 @@ func check_if_disc_is_catchable():
         return false
     return self.catching_area.overlaps_body(self.disc.body)
 
+func try_to_catch_disc():
+    self.emit_signal('try_to_catch_disc', self)
+
 func catch_disc():
     # !AnimationHook Catching the disc
     self.set_deselected()
-    # self.assign_disc_possession()
-    self.has_disc = true
-    self.current_state = PLAYER_STATE.WITH_DISC
+    self.assign_disc_possession()
     self.disc.disc_is_reached()
     self.current_velocity = Vector3(0, 0, 0)
     self.animation_player.play('Idle')
     self.emit_signal('disc_is_caught', self)
+    self.emit_signal('thrower_arm_position', self.get_wrist_position())
 
 func recalculate_current_velocity(delta):
     # If we are running in desired direction, accelerate to max_speed
@@ -249,3 +246,4 @@ func assign_disc_possession():
 
 func set_idle():
     self.current_state = PLAYER_STATE.IDLE
+

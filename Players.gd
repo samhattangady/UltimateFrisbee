@@ -117,6 +117,10 @@ func handle_screen_tap(point):
         if world_point:
             self.selected_player.run_to_world_point(world_point.position)
 
+func player_trying_to_catch_disc(player):
+    if self.player_with_disc == null:
+        player.catch_disc()
+
 func is_player_being_selected(point):
     for player in self.players:
         # TODO (30 May 2019 sam): If there are 2 players very close to each other

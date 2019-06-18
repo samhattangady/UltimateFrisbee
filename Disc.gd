@@ -44,7 +44,8 @@ var DISC_CALCULATOR
 const DEBUG = true
 signal position_update(position)
 signal throw_started(curve, throw_details)
-signal throw_complete(position)
+signal throw_complete()
+signal disc_position_update(position)
 
 func _ready():
     self.path_follow = self.get_node('Path/PathFollow')
@@ -52,12 +53,12 @@ func _ready():
     self.body = self.get_node('Path/PathFollow/DiscKinematicBody')
     self.random = RandomNumberGenerator.new()
     self.DISC_CALCULATOR = load('DiscCalculator.gd').new()
-    self.emit_signal('throw_complete', self.path.translation)
-    print(self.name, ' ready')
+    self.emit_signal('disc_position_update', self.get_position())
 
 func _process(delta):
     if DEBUG:
         emit_signal('position_update', path_follow.translation)
+    self.emit_signal('disc_position_update', self.get_position())
     if currently_thrown and !self.pause_state:
         update_offset(delta)
 
@@ -100,6 +101,7 @@ func start_throw_animation():
     # FIXME (15 May 2019 sam): !TranslationError. See bottom
     if self.number_of_throws != 0:
         self.translation = -self.path.translation
+    self.path.rotation = Vector3(0, 0, 0)
     self.number_of_throws += 1
     self.currently_thrown = true
     self.emit_signal('throw_started', self.path.curve, {
@@ -144,8 +146,8 @@ func throw_is_complete():
     self.path.translation = self.path_follow.translation
     self.path_follow.unit_offset = 0.0
     self.throw_time_elapsed = 0.0
-    self.emit_signal('throw_complete', self.get_position())
     var actual_time = (OS.get_ticks_msec()-self.throw_start_time) / 1000.0
+    self.emit_signal('throw_complete')
 
 func disc_is_reached():
     # There are two cases here. Either the throw
@@ -210,9 +212,13 @@ func get_point_in_world(position):
     if not point: return
     return point.position
 
-func attach_to_wrist(pos):
-    self.translation = pos.origin
-    print(self.translation)
+func attach_to_wrist(trans):
+    # Complicated because of !TranslationError
+    # self.path.transform = trans[1].translated(trans[0])
+    self.path.translation = trans[0]
+    # TODO (05 May 2019 sam): See if the transform can be applied without having
+    # to scale again.
+    self.path.scale = Vector3(1, 1, 1)
 
 func set_pause_state(state):
     self.pause_state = state
@@ -234,7 +240,8 @@ func set_pause_state(state):
 # translation values of path_follow, disc and path. path_follow seems to have a
 # global translation while all the others look like the have a relative to parent
 # translation value. This results in various errors when we are trying to make a
-# throw from anywhere other than Vector3(0, 0, 0)
+# throw from anywhere other than Vector3(0, 0, 0). Additionally, it looks like
+# when unit_offset is 0, path_follow has a relative translation.
 
 # TODO (22 May 2019 sam): Right now, a straight throw results in the disc travelling
 # at ground level from start to end. Figure out how to deal with that once we have

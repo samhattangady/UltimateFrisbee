@@ -9,7 +9,7 @@ func _ready():
     self.player.connect('thrower_arm_position', self, 'update_pos')
 
 func update_pos(trans):
-    print(trans)
+    # print(trans)
     self.cube.transform = trans[1].translated(trans[0])
     self.cube.scale = Vector3(0.2, 0.2, 0.2)
     # self.cube.translation = trans[0]
@@ -22,4 +22,3 @@ func _input(event):
     if event.is_action_pressed('ui_accept'):
         self.player.animation_player.play('ArmatureAction')
 
-    

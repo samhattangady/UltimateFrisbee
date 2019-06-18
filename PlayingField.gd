@@ -26,12 +26,12 @@ func _ready():
     # self.disc.connect('throw_started', self.player, 'disc_is_thrown')
     self.disc.connect('throw_started', self.world_debug, 'throw_calculated')
     self.disc.connect('throw_started', self.input_controls, 'throw_started')
-    self.disc.connect('throw_complete', self.game_camera, 'throw_complete')
-    self.game_camera.connect('camera_movement_completed', self.input_controls, 'camera_movement_completed')
+    self.disc.connect('disc_position_update', self.game_camera, 'disc_position_update')
+    self.disc.connect('throw_complete', self.input_controls, 'throw_complete')
     self.connect_player_signals()
     # self.player.connect('attack_point', self.world_debug, 'attack_point_calculated')
     # To start off with the camera focussed on the disc.
-    self.game_camera.throw_complete(self.disc.path.translation)
+    self.game_camera.disc_position_update(self.disc.path.translation)
 
 func connect_player_signals():
     for p in self.players_controller.players:
@@ -40,6 +40,7 @@ func connect_player_signals():
         p.connect('throw_animation_complete', self.disc, 'start_throw_animation')
         p.connect('disc_is_caught', self.players_controller, 'disc_is_caught')
         p.connect('thrower_arm_position', self.disc, 'attach_to_wrist')
+        p.connect('try_to_catch_disc', self.players_controller, 'player_trying_to_catch_disc')
 
 func check_player_selected():
     pass

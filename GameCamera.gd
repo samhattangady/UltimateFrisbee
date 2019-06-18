@@ -59,20 +59,16 @@ func calculate_start_origin():
     var disc_points = Vector2(screen.x/2, screen.y*3/4)
     start_origin= get_point_in_world(disc_points)
 
-func throw_complete(position):
+func disc_position_update(position):
     # We want the camera to center the disc to the point 3/4th y and 1/2 x
     # `start_origin` is already fixed at that point. So that's what we use
+    # TODO (05 Jun 2019 sam): See if we want to prevent disc following during the throwing
+    # animation
+    # FIXME (05 Jun 2019 sam): There is a camera jitter which might be related to TranslationError
     self.start_origin = position
-    var start_translation = self.translation
     var end_translation = Vector3(start_origin.x+camera_x_offset, start_origin.y+camera_height, start_origin.z+camera_z_offset)
-    # TODO (03 Jun 2019 sam): See what is the best tween to use.
-    self.camera_tween.interpolate_property(self, 'translation', 
-            start_translation, end_translation, 
-            0.6, Tween.TRANS_ELASTIC, Tween.EASE_IN_OUT, 0.0)
-    self.camera_tween.start()
-    # translation.x = start_origin.x+camera_x_offset
-    # translation.y = start_origin.y+camera_height
-    # translation.z = start_origin.z+camera_z_offset
+    self.translation = end_translation
+    self.emit_signal('camera_movement_completed')
 
 func camera_movement_complete(obj, node_path):
     self.emit_signal('camera_movement_completed')

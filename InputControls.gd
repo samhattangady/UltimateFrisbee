@@ -37,7 +37,7 @@ func camera_movement_completed():
 func throw_started(curve, throw_details):
     self.block_input()
 
-func throw_complete(position):
+func throw_complete():
     self.allow_input()
 
 func block_input():
