@@ -11,8 +11,8 @@ var body
 
 var debug_previous_throw = {}
 
-export var max_throw_speed = 30.0
-export var min_throw_speed = 12.0
+export var max_throw_speed = 5.0
+export var min_throw_speed = 2.0
 
 export var max_throw_distance = 80.0
 export var min_throw_distance = 15.0
@@ -50,12 +50,12 @@ signal disc_position_update(position)
 func _ready():
     self.path_follow = self.get_node('Path/PathFollow')
     self.path = self.get_node('Path')
-    self.body = self.get_node('Path/PathFollow/DiscKinematicBody')
+    self.body = self.get_node('DiscKinematicBody')
     self.random = RandomNumberGenerator.new()
     self.DISC_CALCULATOR = load('DiscCalculator.gd').new()
     self.emit_signal('disc_position_update', self.get_position())
 
-func _process(delta):
+func _physics_process(delta):
     if DEBUG:
         emit_signal('position_update', path_follow.translation)
     self.emit_signal('disc_position_update', self.get_position())
@@ -77,32 +77,21 @@ func _input(event):
         })
 
 func get_position():
-    # To get the world coordinates of the disc. When in the air, we want
-    # the path_follow.translation, but on the ground, we want the path.translation
-    # This might be a part of !TranslationError, Don't know.
-    if self.currently_thrown:
-        return self.path_follow.translation
-    else:
-        return self.path.translation
+    return self.translation
 
 func execute_throw(throw):
     # Check if end point meets ground
     var end_point = get_point_in_world(throw['end'])
     if not end_point: return
     var curve = calculate_throw_curve(throw)
-    path.curve = curve
+    self.path.curve = curve
     # trace_path(curve)
-    start_throw(throw, curve)
+    self.start_throw(throw, curve)
 
 func start_throw(throw, curve):
     self.calculate_throw_speed(throw, curve)
 
 func start_throw_animation():
-    # FIXME (15 May 2019 sam): !TranslationError. See bottom
-    if self.number_of_throws != 0:
-        self.translation = -self.path.translation
-    self.path.rotation = Vector3(0, 0, 0)
-    self.number_of_throws += 1
     self.currently_thrown = true
     self.emit_signal('throw_started', self.path.curve, {
         'time': self.total_throw_time,
@@ -131,20 +120,18 @@ func update_offset(delta):
                                 self.total_throw_time,
                                 self.current_max_speed,
                                 self.current_min_speed)
-    var offset = self.path_follow.unit_offset
-    if offset >= 1.0:
+    self.translation = self.path_follow.translation
+    if self.path_follow.unit_offset >= 1.0:
         self.throw_is_grounded()
 
 func throw_is_grounded():
     # Throw hits the ground
     self.path_follow.unit_offset = 0.999
+    self.translation = self.path_follow.translation
     self.throw_is_complete()
 
 func throw_is_complete():
     self.currently_thrown = false
-    # FIXME (15 May 2019 sam): !TranslationError. See bottom
-    self.path.translation = self.path_follow.translation
-    self.path_follow.unit_offset = 0.0
     self.throw_time_elapsed = 0.0
     var actual_time = (OS.get_ticks_msec()-self.throw_start_time) / 1000.0
     self.emit_signal('throw_complete')
@@ -159,15 +146,15 @@ func disc_is_reached():
 
 func calculate_throw_curve(throw_data):
     var end_point = get_point_in_world(throw_data['end'])
-    var world_dist = path.translation.distance_to(end_point)
+    var world_dist = self.translation.distance_to(end_point)
     var screen_dist = throw_data['start'].distance_to(throw_data['end'])
     var world_x_disp = throw_data['x_disp']* X_DISP_FACTOR * (world_dist/screen_dist)
     if abs(world_x_disp) > world_dist*MAX_OI_CURVE:
         world_x_disp = world_dist*MAX_OI_CURVE * (world_x_disp/abs(world_x_disp))
-    var oi_point = calculate_oi_point(world_dist, world_x_disp, path.translation, end_point)
+    var oi_point = calculate_oi_point(world_dist, world_x_disp, self.translation, end_point)
     var world_y_disp = throw_data['y_disp'] * (world_dist/screen_dist)
     var curve = Curve3D.new()
-    curve.add_point(path.translation)
+    curve.add_point(self.translation)
     curve.add_point(oi_point['oi_point'], oi_point['cin'], oi_point['cout'])
     curve.add_point(end_point)
     return curve
@@ -186,7 +173,7 @@ func calculate_oi_point(dist, x_disp, start, end):
     # that more oi is more height
     var max_height = (dist/2) * cos(deg2rad(45))
     var oiy = lerp(0, max_height, abs(x_disp)/dist*MAX_OI_CURVE)
-    oiy += (path.translation.y+end.y) / 2
+    oiy += (self.translation.y+end.y) / 2
     # We want some randomness in how the exact curve of the throw looks
     var ci = (start-end)/3.0*random.randf_range(0.8, 1.5)
     var co = (end-start)/3.0*random.randf_range(0.8, 1.5)
@@ -213,11 +200,7 @@ func get_point_in_world(position):
     return point.position
 
 func attach_to_wrist(trans):
-    # Complicated because of !TranslationError
-    self.path.translation = trans.origin
-    # TODO (05 May 2019 sam): See if the transform can be applied without having
-    # to scale again.
-    # self.path.scale = Vector3(1, 1, 1)
+    self.transform = trans
 
 func set_pause_state(state):
     self.pause_state = state
@@ -235,13 +218,6 @@ func set_pause_state(state):
 # have one for each scene or whatever. Might make code organization a little
 # more elegant
 
-# FIXME (15 May 2019 sam): !TranslationError. There seems to be an issue with the
-# translation values of path_follow, disc and path. path_follow seems to have a
-# global translation while all the others look like the have a relative to parent
-# translation value. This results in various errors when we are trying to make a
-# throw from anywhere other than Vector3(0, 0, 0). Additionally, it looks like
-# when unit_offset is 0, path_follow has a relative translation.
-
 # TODO (22 May 2019 sam): Right now, a straight throw results in the disc travelling
 # at ground level from start to end. Figure out how to deal with that once we have
 # players catching the disc etc.
@@ -253,4 +229,4 @@ func set_pause_state(state):
 # FIXME (03 Jun 2019 sam): There is a bug where when we make a throw that ends out of
 # bounds, the previous throw is repeated. Or something like that. Need to change that
 # into something like a cancellation or rejection of input. There are multiple ways that
-# can probably be dealt with.
+# can probably be dealt with. (19 Jun 2019 sam): Not able to reproduce this.

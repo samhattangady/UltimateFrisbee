@@ -7,6 +7,8 @@ export var MAX_ANGLE_WITHOUT_STOPPING = 60
 export var AT_DESTINATION_DISTANCE = 1.5
 export var DISC_CATCHING_DISTANCE = 1.0
 
+var CLAP_CATCH_ANIMATION_LENGTH = 1.0
+
 var current_direction = Vector3(1, 0, 0)
 var current_velocity = Vector3(-1, 0, 0)
 var desired_direction = Vector3(0, 0, -1)
@@ -24,6 +26,7 @@ var right_hand
 var disc
 var skeleton
 var animation_player
+var animation_tree
 var selected_marker
 var has_disc = false
 var is_selected
@@ -32,6 +35,8 @@ var current_state
 var pause_state
 var catching_area
 var debug_name
+var time_remaining_to_catch
+var playing_catch_anim = false
 
 var debug_starting_time
 var debug=true
@@ -47,6 +52,7 @@ signal try_to_catch_disc(player)
 func _ready():
     self.player_model = self.get_node('PlayerModel')
     self.animation_player = self.player_model.get_node('AnimationPlayer')
+    self.animation_tree = self.player_model.get_node('AnimationTree')
     self.selected_marker = self.get_node('SelectedMarker')
     self.disc_calculator = load('DiscCalculator.gd').new()
     self.animation_player.get_animation('Idle').set_loop(true)
@@ -55,8 +61,10 @@ func _ready():
     self.skeleton = self.player_model.get_node('Armature')
     self.right_hand = self.skeleton.find_bone('Wrist.R')
     self.animation_player.connect('animation_finished', self, 'handle_animation_completion')
+    self.animation_player.play('Idle')
     self.current_state = PLAYER_STATE.IDLE
     self.catching_area = self.get_node('CatchingArea')
+    self.time_remaining_to_catch = 0
     if self.has_disc:
         self.update_arm_position()
 
@@ -66,13 +74,25 @@ func _physics_process(delta):
             self.recalculate_current_velocity(delta)
             self.move_and_slide(self.current_velocity, Vector3(0, -1, 0))
         if self.current_velocity.length() > 1.0:
-            self.animation_player.play('Run')
+            # TODO (19 Jun 2019 sam): Move this out of here.
+            if self.playing_catch_anim:
+                self.animation_player.play('Catching')
+            else:
+                self.animation_tree.blend2_node_set_amount('Run-Speed', self.current_velocity.length()/self.max_speed)
+                self.animation_player.play('Run')
         if self.check_if_disc_is_catchable():
             self.try_to_catch_disc()
         if self.check_if_at_destination():
             self.stop_running()
         if self.has_disc:
             self.update_arm_position()
+        if self.time_remaining_to_catch > self.CLAP_CATCH_ANIMATION_LENGTH:
+            self.time_remaining_to_catch -= delta
+            if self.time_remaining_to_catch <= self.CLAP_CATCH_ANIMATION_LENGTH:
+                # TODO (19 Jun 2019 sam): Add the catching state to player states
+                self.playing_catch_anim = true
+                self.animation_player.play('Catching', -1, 1.0, false)
+
 
 func get_wrist_position():
     # TODO (18 Jun 2019 sam): We need to add rotation aspect here I think
@@ -106,7 +126,7 @@ func catch_disc():
     self.assign_disc_possession()
     self.disc.disc_is_reached()
     self.current_velocity = Vector3(0, 0, 0)
-    self.animation_player.play('Idle')
+    # self.animation_player.play('Catching')
     self.emit_signal('disc_is_caught', self)
     # self.emit_signal('thrower_arm_position', self.get_wrist_position())
 
@@ -143,9 +163,12 @@ func update_arm_position():
 
 func start_throw_animation(throw_data):
     # We want to rotate to face where the throw is going. Note that by default the model is facing backwards. So we have to adjust the look_at point accordingly.
-    # TODO (18 Jun 2019 sam): Check if this rotation is working correctly.
-    # TODO (19 Jun 2019 sam): Ensure that end point is not nil.
-    self.transform = self.transform.looking_at(self.translation - self.disc.get_point_in_world(throw_data['end']), Vector3(0, 1, 0))
+    # TODO (18 Jun 2019 sam): Check if this rotation is working correctly. Sometimes the
+    # guy is pointing the wrong way.
+    # TODO (19 Jun 2019 sam): Ensure that end point is not nil. Make it cleaner
+    var point = self.disc.get_point_in_world(throw_data['end'])
+    if point == null: return
+    self.transform = self.transform.looking_at(self.translation - point, Vector3(0, 1, 0))
     self.animation_player.play(throw_data['throw'], -1, 1.3, false)
     self.current_state = PLAYER_STATE.THROWING
     # TODO (31 May 2019 sam): Add some sort of timer here to switch the state to idle
@@ -159,8 +182,10 @@ func handle_animation_completion(anim_name):
             self.animation_player.play('Backhand.FollowThrough')
         if anim_name == 'Forehand':
             self.animation_player.play('Forehand.FollowThrough')
-    if anim_name != 'Idle':
+    elif anim_name != 'Idle':
         self.animation_player.play('Idle')
+    if anim_name == 'Catching':
+        self.playing_catch_anim = false
 
 func set_selected():
     self.is_selected = true
@@ -171,6 +196,10 @@ func set_deselected():
     self.selected_marker.visible = false
 
 func run_to_world_point(destination):
+    if self.has_disc:
+        # (19 Jun 2019 sam): Will have to figure out what to do here when we
+        # have to walk the disc to the line etc.
+        return
     self.desired_destination = destination
     var dir = destination - self.translation
     self.set_desired_direction(dir)
@@ -179,8 +208,9 @@ func run_to_world_point(destination):
 
 func disc_is_thrown(curve, throw_details):
     var attack_point = self.calculate_attack_point(curve, throw_details)
-    if self.current_state == PLAYER_STATE.RUNNING or attack_point.time < 1.0:
+    if self.current_state == PLAYER_STATE.RUNNING or attack_point.time_difference < 0.2:
         self.run_to_world_point(attack_point.point)
+        self.time_remaining_to_catch = attack_point.time_to_catch
 
 func calculate_attack_point(curve, throw_details):
     # We take different points along the flight of the disc, and measure the
@@ -196,6 +226,7 @@ func calculate_attack_point(curve, throw_details):
     var number_of_samples = 100
     var best_point = -1
     var best_time_difference = pow(10, 10)
+    var time_to_catch = 0
     for i in range(number_of_samples):
         var time_sample = (i+1) * throw_details['time'] / number_of_samples
         var offset_sample = self.disc_calculator.get_disc_offset(time_sample, throw_details['time'], throw_details['max_speed'], throw_details['min_speed'])
@@ -206,7 +237,10 @@ func calculate_attack_point(curve, throw_details):
         if abs(time_to_point - time_sample) < best_time_difference:
             best_time_difference = abs(time_to_point-time_sample)
             best_point = sample_point
-    return {'point': best_point, 'time': best_time_difference}
+            time_to_catch = time_sample
+    return {'point': best_point,
+               'time_difference': best_time_difference,
+               'time_to_catch': time_to_catch}
 
 func get_time_to_point(point, pos, dir, vel):
     # Get the time it would take to move to a certain point

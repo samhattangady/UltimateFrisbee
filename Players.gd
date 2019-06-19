@@ -11,10 +11,10 @@ var PLAYER_PIXEL_RADIUS = 25
 var HEX_SPACING = 10.0
 
 func _ready():
-    self.hex_with_back_2()
+    self.n_players()
     self.player_with_disc.update_arm_position()
 
-func three_players():
+func n_players():
     var player_scene = preload('res://Player2.tscn')
     for i in range(number_of_players):
         var p = player_scene.instance()

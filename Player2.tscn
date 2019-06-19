@@ -41,6 +41,7 @@ transform = Transform( 1.85, 0, 0, 0, -8.65485e-08, -3.47, 0, 1.98, -1.51679e-07
 shape = SubResource( 11 )
 
 [node name="MeshInstance" type="MeshInstance" parent="CatchingArea/CollisionShape"]
+visible = false
 mesh = SubResource( 12 )
 material/0 = SubResource( 13 )
 
