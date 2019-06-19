@@ -1,8 +1,8 @@
 extends KinematicBody
 
-export var max_speed = 8
-export var acceleration = 10
-export var deceleration = 10
+export var max_speed = 20
+export var acceleration = 50
+export var deceleration = 60
 export var MAX_ANGLE_WITHOUT_STOPPING = 60
 export var AT_DESTINATION_DISTANCE = 1.5
 export var DISC_CATCHING_DISTANCE = 1.0
@@ -23,7 +23,6 @@ var player_model
 var right_hand
 var disc
 var skeleton
-var wrist_rest_position
 var animation_player
 var selected_marker
 var has_disc = false
@@ -32,6 +31,7 @@ var disc_calculator
 var current_state
 var pause_state
 var catching_area
+var debug_name
 
 var debug_starting_time
 var debug=true
@@ -45,18 +45,20 @@ signal disc_is_caught(player)
 signal try_to_catch_disc(player)
 
 func _ready():
-    self.animation_player = self.get_node('AnimationPlayer')
+    self.player_model = self.get_node('PlayerModel')
+    self.animation_player = self.player_model.get_node('AnimationPlayer')
     self.selected_marker = self.get_node('SelectedMarker')
     self.disc_calculator = load('DiscCalculator.gd').new()
     self.animation_player.get_animation('Idle').set_loop(true)
-    self.animation_player.get_animation('ArmatureAction').set_loop(true)
+    self.animation_player.get_animation('Run').set_loop(true)
     self.animation_player.play('Idle')
-    self.skeleton = self.get_node('Armature').get_node('Skeleton')
+    self.skeleton = self.player_model.get_node('Armature')
     self.right_hand = self.skeleton.find_bone('Wrist.R')
-    self.wrist_rest_position = self.skeleton.get_bone_transform(right_hand)
     self.animation_player.connect('animation_finished', self, 'handle_animation_completion')
     self.current_state = PLAYER_STATE.IDLE
     self.catching_area = self.get_node('CatchingArea')
+    if self.has_disc:
+        self.update_arm_position()
 
 func _physics_process(delta):
     if !self.pause_state:
@@ -64,19 +66,18 @@ func _physics_process(delta):
             self.recalculate_current_velocity(delta)
             self.move_and_slide(self.current_velocity, Vector3(0, -1, 0))
         if self.current_velocity.length() > 1.0:
-            self.animation_player.play('ArmatureAction')
+            self.animation_player.play('Run')
         if self.check_if_disc_is_catchable():
             self.try_to_catch_disc()
         if self.check_if_at_destination():
             self.stop_running()
-        if self.current_state == PLAYER_STATE.THROWING:
-            self.emit_signal('thrower_arm_position', self.get_wrist_position())
+        if self.has_disc:
+            self.update_arm_position()
 
 func get_wrist_position():
-    var chain = ['Wrist.R']
-    var relative_translation = self.translation + self.get_node('Armature').translation
-    relative_translation += self.skeleton.get_bone_global_pose(self.right_hand).origin
-    return [relative_translation, self.transform]
+    # TODO (18 Jun 2019 sam): We need to add rotation aspect here I think
+    var relative_translation = self.skeleton.get_bone_global_pose(self.right_hand).origin
+    return self.transform.translated(relative_translation)
 
 func set_disc(disc):
     self.disc = disc
@@ -107,7 +108,7 @@ func catch_disc():
     self.current_velocity = Vector3(0, 0, 0)
     self.animation_player.play('Idle')
     self.emit_signal('disc_is_caught', self)
-    self.emit_signal('thrower_arm_position', self.get_wrist_position())
+    # self.emit_signal('thrower_arm_position', self.get_wrist_position())
 
 func recalculate_current_velocity(delta):
     # If we are running in desired direction, accelerate to max_speed
@@ -138,11 +139,14 @@ func set_desired_direction(dir):
     rotation.y = atan2(desired_direction.x, desired_direction.z)
 
 func update_arm_position():
-    var global_transform = self.skeleton.get_bone_global_pose(right_hand)
-    self.emit_signal('thrower_arm_position', global_transform)
+    self.emit_signal('thrower_arm_position', self.get_wrist_position())
 
 func start_throw_animation(throw_data):
-    self.animation_player.play(throw_data['throw'], -1, 3.0, false)
+    # We want to rotate to face where the throw is going. Note that by default the model is facing backwards. So we have to adjust the look_at point accordingly.
+    # TODO (18 Jun 2019 sam): Check if this rotation is working correctly.
+    # TODO (19 Jun 2019 sam): Ensure that end point is not nil.
+    self.transform = self.transform.looking_at(self.translation - self.disc.get_point_in_world(throw_data['end']), Vector3(0, 1, 0))
+    self.animation_player.play(throw_data['throw'], -1, 1.3, false)
     self.current_state = PLAYER_STATE.THROWING
     # TODO (31 May 2019 sam): Add some sort of timer here to switch the state to idle
 
@@ -151,6 +155,10 @@ func handle_animation_completion(anim_name):
         self.emit_signal('throw_animation_complete')
         self.has_disc = false
         self.current_state = PLAYER_STATE.THROWN
+        if anim_name == 'Backhand':
+            self.animation_player.play('Backhand.FollowThrough')
+        if anim_name == 'Forehand':
+            self.animation_player.play('Forehand.FollowThrough')
     if anim_name != 'Idle':
         self.animation_player.play('Idle')
 
@@ -247,3 +255,8 @@ func assign_disc_possession():
 func set_idle():
     self.current_state = PLAYER_STATE.IDLE
 
+func set_debug_name(name):
+    self.debug_name = name
+
+func get_debug_name():
+    return self.debug_name

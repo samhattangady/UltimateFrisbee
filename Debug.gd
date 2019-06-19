@@ -1,8 +1,29 @@
 extends Node
 
 onready var disc = get_parent().get_node('FrisbeeThings').get_node('Disc')
+var players_controller
+var player_labels
+var game_camera
 
-func _input(event):
-    if event.is_action_pressed('ui_accept'):
-        print(disc.get_node('Path').translation)
+var debug = true
 
+func _ready():
+    self.player_labels = self.get_node('PlayerLabels')
+    self.game_camera = self.get_parent().get_node('GameCamera')
+
+func _physics_process(delta):
+    if not self.debug:
+        return
+    if not self.players_controller:
+        return
+    for child in self.player_labels.get_children():
+        self.player_labels.remove_child(child)
+    for player in self.players_controller.players:
+        var l = Label.new()
+        l.text = player.get_debug_name()
+        l.rect_position = self.game_camera.unproject_position(player.translation+Vector3(0,2,0))
+        self.player_labels.add_child(l)
+        
+
+func set_player_controller(pc):
+    self.players_controller = pc

@@ -214,11 +214,10 @@ func get_point_in_world(position):
 
 func attach_to_wrist(trans):
     # Complicated because of !TranslationError
-    # self.path.transform = trans[1].translated(trans[0])
-    self.path.translation = trans[0]
+    self.path.translation = trans.origin
     # TODO (05 May 2019 sam): See if the transform can be applied without having
     # to scale again.
-    self.path.scale = Vector3(1, 1, 1)
+    # self.path.scale = Vector3(1, 1, 1)
 
 func set_pause_state(state):
     self.pause_state = state

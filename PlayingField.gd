@@ -6,6 +6,7 @@ var frisbee_things
 var disc
 var world_debug
 var players_controller
+var screen_debug
 
 func _ready():
     self.input_controls = self.get_node('InputControls')
@@ -14,6 +15,8 @@ func _ready():
     self.disc = self.frisbee_things.get_node('Disc')
     self.players_controller = self.frisbee_things.get_node('Players')
     self.world_debug = self.get_node('WorldDebug')
+    self.screen_debug = self.get_node('Debug')
+    self.screen_debug.set_player_controller(self.players_controller)
     self.game_camera.make_current()
     self.players_controller.set_game_camera(self.game_camera)
     self.players_controller.set_disc(self.disc)

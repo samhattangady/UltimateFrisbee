@@ -12,81 +12,55 @@ var HEX_SPACING = 10.0
 
 func _ready():
     self.hex_with_back_2()
+    self.player_with_disc.update_arm_position()
 
-func two_players():
+func three_players():
     var player_scene = preload('res://Player2.tscn')
     for i in range(number_of_players):
         var p = player_scene.instance()
-        p.translation = Vector3(0.0, 0.0, -10.0*i)
-        p.scale = Vector3(2, 2, 2)
+        p.translation = Vector3(0.0, 0.0, -20.0*i)
         self.add_child(p)
         self.players.append(p)
         if i == 0:
             p.assign_disc_possession()
             self.player_with_disc = p
 
-func hex_with_back_1():
-    var player_scene = preload('res://Player2.tscn')
-    var back_1 = player_scene.instance()
-    back_1.assign_disc_possession()
-    self.player_with_disc = back_1
-    back_1.translation = Vector3 (0, 0, 0)
-    self.add_child(back_1)
-    self.players.append(back_1)
-    var back_2 = player_scene.instance()
-    back_2.translation = Vector3 (2.0*HEX_SPACING, 0.0, -0.0*HEX_SPACING)
-    self.add_child(back_2)
-    self.players.append(back_2)
-    var wing_1 = player_scene.instance()
-    wing_1.translation = Vector3 (-1.5*HEX_SPACING, 0.0, -1.5*HEX_SPACING)
-    self.add_child(wing_1)
-    self.players.append(wing_1)
-    var hat = player_scene.instance()
-    hat.translation = Vector3 (1.0*HEX_SPACING, 0.0, -1.5*HEX_SPACING)
-    self.add_child(hat)
-    self.players.append(hat)
-    var wing_2 = player_scene.instance()
-    wing_2.translation = Vector3 (3.5*HEX_SPACING, 0.0, -1.5*HEX_SPACING)
-    self.add_child(wing_2)
-    self.players.append(wing_2)
-    var front_1 = player_scene.instance()
-    front_1.translation = Vector3 (-0.5*HEX_SPACING, 0.0, -3.0*HEX_SPACING)
-    self.add_child(front_1)
-    self.players.append(front_1)
-    var front_2 = player_scene.instance()
-    front_2.translation = Vector3 (2.0*HEX_SPACING, 0.0, -3.0*HEX_SPACING)
-    self.add_child(front_2)
-    self.players.append(front_2)
-
 func hex_with_back_2():
     var player_scene = preload('res://Player2.tscn')
     var back_1 = player_scene.instance()
     back_1.assign_disc_possession()
+    back_1.set_debug_name('back_1')
     self.player_with_disc = back_1
     back_1.translation = Vector3 (0, 0, 0)
     self.add_child(back_1)
     self.players.append(back_1)
     var back_2 = player_scene.instance()
+    back_2.set_debug_name('back_2')
     back_2.translation = Vector3 (-2.0*HEX_SPACING, 0.0, -0.0*HEX_SPACING)
     self.add_child(back_2)
     self.players.append(back_2)
     var wing_1 = player_scene.instance()
+    wing_1.set_debug_name('wing_1')
     wing_1.translation = Vector3 (-3.5*HEX_SPACING, 0.0, -1.5*HEX_SPACING)
     self.add_child(wing_1)
     self.players.append(wing_1)
     var hat = player_scene.instance()
+    hat.set_debug_name('hat')
     hat.translation = Vector3 (-1.0*HEX_SPACING, 0.0, -1.5*HEX_SPACING)
     self.add_child(hat)
     self.players.append(hat)
     var wing_2 = player_scene.instance()
+    wing_2.set_debug_name('wing_2')
     wing_2.translation = Vector3 (1.5*HEX_SPACING, 0.0, -1.5*HEX_SPACING)
     self.add_child(wing_2)
     self.players.append(wing_2)
     var front_1 = player_scene.instance()
+    front_1.set_debug_name('front_1')
     front_1.translation = Vector3 (-2.0*HEX_SPACING, 0.0, -3.0*HEX_SPACING)
     self.add_child(front_1)
     self.players.append(front_1)
     var front_2 = player_scene.instance()
+    front_2.set_debug_name('front_2')
     front_2.translation = Vector3 (0.0*HEX_SPACING, 0.0, -3.0*HEX_SPACING)
     self.add_child(front_2)
     self.players.append(front_2)
@@ -120,6 +94,7 @@ func handle_screen_tap(point):
 func player_trying_to_catch_disc(player):
     if self.player_with_disc == null:
         player.catch_disc()
+        self.player_with_disc = player
 
 func is_player_being_selected(point):
     for player in self.players:
