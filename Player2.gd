@@ -2,7 +2,7 @@ extends KinematicBody
 
 export var max_speed = 20
 export var acceleration = 50
-export var deceleration = 60
+export var deceleration = 1
 export var MAX_ANGLE_WITHOUT_STOPPING = 60
 export var AT_DESTINATION_DISTANCE = 1.5
 export var DISC_CATCHING_DISTANCE = 1.0
@@ -63,6 +63,7 @@ func _ready():
     self.animation_player.connect('animation_finished', self, 'handle_animation_completion')
     self.animation_player.play('Idle')
     self.current_state = PLAYER_STATE.IDLE
+    self.animation_tree.active = false
     self.catching_area = self.get_node('CatchingArea')
     self.time_remaining_to_catch = 0
     if self.has_disc:
@@ -73,13 +74,14 @@ func _physics_process(delta):
         if self.current_state == PLAYER_STATE.RUNNING:
             self.recalculate_current_velocity(delta)
             self.move_and_slide(self.current_velocity, Vector3(0, -1, 0))
-        if self.current_velocity.length() > 1.0:
-            # TODO (19 Jun 2019 sam): Move this out of here.
+        if self.current_velocity.length() > 0.0:
+            var blend_amount = self.current_velocity.length() / self.max_speed
+            self.animation_tree.set('parameters/Idle-Run/blend_amount', blend_amount)
+            self.animation_tree.active = true
             if self.playing_catch_anim:
                 self.animation_player.play('Catching')
-            else:
-                self.animation_tree.blend2_node_set_amount('Run-Speed', self.current_velocity.length()/self.max_speed)
-                self.animation_player.play('Run')
+        else:
+            self.animation_tree.active = false
         if self.check_if_disc_is_catchable():
             self.try_to_catch_disc()
         if self.check_if_at_destination():
@@ -89,9 +91,10 @@ func _physics_process(delta):
         if self.time_remaining_to_catch > self.CLAP_CATCH_ANIMATION_LENGTH:
             self.time_remaining_to_catch -= delta
             if self.time_remaining_to_catch <= self.CLAP_CATCH_ANIMATION_LENGTH:
+                pass
                 # TODO (19 Jun 2019 sam): Add the catching state to player states
-                self.playing_catch_anim = true
-                self.animation_player.play('Catching', -1, 1.0, false)
+                # self.playing_catch_anim = true
+                # self.animation_player.play('Catching', -1, 1.0, false)
 
 
 func get_wrist_position():
@@ -147,6 +150,7 @@ func recalculate_current_velocity(delta):
             self.current_velocity = self.current_direction*max_speed
     else:
         # !AnimationHook - Chopstop / sliding
+        # FIXME (21 Jun 2019 sam): Deceleration doesn't seem to be working correctly
         self.current_velocity -= self.current_direction*self.deceleration * delta
         if self.current_velocity.normalized() != self.current_direction:
             self.current_velocity = Vector3(0, 0, 0)

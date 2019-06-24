@@ -11,8 +11,8 @@ var body
 
 var debug_previous_throw = {}
 
-export var max_throw_speed = 5.0
-export var min_throw_speed = 2.0
+export var max_throw_speed = 50.0
+export var min_throw_speed = 12.0
 
 export var max_throw_distance = 80.0
 export var min_throw_distance = 15.0

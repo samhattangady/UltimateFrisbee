@@ -11,7 +11,7 @@ var PLAYER_PIXEL_RADIUS = 25
 var HEX_SPACING = 10.0
 
 func _ready():
-    self.n_players()
+    self.hex_with_back_2()
     self.player_with_disc.update_arm_position()
 
 func n_players():
