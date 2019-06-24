@@ -7,6 +7,7 @@ var disc
 var world_debug
 var players_controller
 var screen_debug
+var ground
 
 func _ready():
     self.input_controls = self.get_node('InputControls')
@@ -16,8 +17,10 @@ func _ready():
     self.players_controller = self.frisbee_things.get_node('Players')
     self.world_debug = self.get_node('WorldDebug')
     self.screen_debug = self.get_node('Debug')
+    self.ground = self.frisbee_things.get_node('Ground')
     self.screen_debug.set_player_controller(self.players_controller)
     self.game_camera.make_current()
+    self.game_camera.set_ground(self.ground)
     self.players_controller.set_game_camera(self.game_camera)
     self.players_controller.set_disc(self.disc)
     self.input_controls.connect('set_pause_state', self.disc, 'set_pause_state')

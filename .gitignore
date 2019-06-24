@@ -1,4 +1,5 @@
 UltimateFrisbee.apk
 .import
+*/*.import
 *.swp
 Scene Root.gd

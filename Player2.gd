@@ -298,3 +298,7 @@ func set_debug_name(name):
 
 func get_debug_name():
     return self.debug_name
+
+# FIXME (24 Jun 2019 sam): There is a bug with player movement. In hex when the first
+# pass is being made to the forehand side, that player does not move to collect the
+# disc.
