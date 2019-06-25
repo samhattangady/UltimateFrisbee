@@ -3,3 +3,4 @@ UltimateFrisbee.apk
 */*.import
 *.swp
 Scene Root.gd
+backup_models/*

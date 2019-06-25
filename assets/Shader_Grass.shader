@@ -3,6 +3,7 @@ shader_type particles;
 uniform float rows = 4;
 uniform float spacing = 1.0;
 uniform sampler2D noisemap;
+uniform float noise_factor = 200.0;
 
 void vertex() {
 	vec4 pos = vec4(0.0, 0.0, 0.0, 0.0);
@@ -17,15 +18,15 @@ void vertex() {
 	pos.x += EMISSION_TRANSFORM[3][0] - mod(EMISSION_TRANSFORM[3][0], spacing);
 	pos.z += EMISSION_TRANSFORM[3][2] - mod(EMISSION_TRANSFORM[3][2], spacing);
 	
-	float noise = texture(noisemap, pos.xz).x;
-	pos.y = noise;
+	float noise = texture(noisemap, pos.xz/noise_factor).x;
+//	pos.y = noise;
 	pos.x += noise* spacing;
 	pos.z += noise* spacing;
 	
-//	TRANSFORM[0][0] = cos(noise.z*3.14);
-//	TRANSFORM[0][2] = -sin(noise.z*3.14);
-//	TRANSFORM[2][0] = sin(noise.z*3.14);
-//	TRANSFORM[2][2] = cos(noise.z*3.14);
+	TRANSFORM[0][0] = cos(noise*3.14);
+	TRANSFORM[0][2] = -sin(noise*3.14);
+	TRANSFORM[2][0] = sin(noise*3.14);
+	TRANSFORM[2][2] = cos(noise*3.14);
 	
 	TRANSFORM[3] = pos;
 }

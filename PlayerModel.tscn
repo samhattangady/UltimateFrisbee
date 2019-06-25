@@ -14,22 +14,35 @@ animation = "Idle"
 animation = "Run"
 
 [sub_resource type="AnimationNodeBlendTree" id=5]
-graph_offset = Vector2( 0, 58.25 )
+graph_offset = Vector2( 0, 63.5 )
 nodes/Idle/node = SubResource( 3 )
 nodes/Idle/position = Vector2( 32, 64 )
 nodes/Idle-Run/node = SubResource( 2 )
-nodes/Idle-Run/position = Vector2( 256, 64 )
+nodes/Idle-Run/position = Vector2( 240, 60 )
 nodes/Run/node = SubResource( 4 )
 nodes/Run/position = Vector2( 32, 176 )
 nodes/output/position = Vector2( 496, 64 )
 node_connections = [ "output", 0, "Idle-Run", "Idle-Run", 0, "Idle", "Idle-Run", 1, "Run" ]
 
-[node name="PlayerModel" index="0" instance=ExtResource( 1 )]
+[node name="PlayerModel" instance=ExtResource( 1 )]
 
 [node name="BodyMesh" parent="Armature" index="0"]
 material/0 = SubResource( 1 )
 
+[node name="Armature2" parent="." index="1"]
+editor/display_folded = true
+
+[node name="Armature3" parent="." index="2"]
+editor/display_folded = true
+
+[node name="Shoes" parent="Armature3" index="0"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -0.665303, 0.0881049, -0.000726328 )
+
 [node name="AnimationTree" type="AnimationTree" parent="." index="3"]
 tree_root = SubResource( 5 )
 anim_player = NodePath("../AnimationPlayer")
-parameters/Idle-Run/blend_amount = 0.63
+process_mode = 0
+parameters/Idle-Run/blend_amount = 0.27
+
+[node name="Armature4" parent="." index="4"]
+editor/display_folded = true

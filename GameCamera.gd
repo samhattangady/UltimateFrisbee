@@ -3,7 +3,6 @@ var start_rotation = 0.0
 var start_x = 0.0
 var start_z = 0.0
 var start_origin = Vector3(0, 0, 0)
-var ground
 
 # FIXME (22 May 2019 sam): Currently these are hardcoded into the script. It should
 # instead be taken from whatever values were set in the editor.
@@ -60,9 +59,6 @@ func calculate_start_origin():
     var disc_points = Vector2(screen.x/2, screen.y*3/4)
     start_origin= get_point_in_world(disc_points)
 
-func set_ground(ground):
-    self.ground = ground
-
 func disc_position_update(position):
     # We want the camera to center the disc to the point 3/4th y and 1/2 x
     # `start_origin` is already fixed at that point. So that's what we use
@@ -72,7 +68,6 @@ func disc_position_update(position):
     self.start_origin = position
     var end_translation = Vector3(start_origin.x+camera_x_offset, start_origin.y+camera_height, start_origin.z+camera_z_offset)
     self.translation = end_translation
-    self.ground.set_grass_position(position)
     self.emit_signal('camera_movement_completed')
 
 func camera_movement_complete(obj, node_path):

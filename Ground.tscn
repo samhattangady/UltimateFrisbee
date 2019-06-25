@@ -1,9 +1,6 @@
-[gd_scene load_steps=8 format=2]
+[gd_scene load_steps=5 format=2]
 
 [ext_resource path="res://Ground.gd" type="Script" id=1]
-[ext_resource path="res://assets/Grass.tres" type="Material" id=2]
-[ext_resource path="res://assets/Particles_Grass.tres" type="Material" id=3]
-[ext_resource path="res://assets/grass.obj" type="ArrayMesh" id=4]
 
 [sub_resource type="BoxShape" id=1]
 
@@ -15,19 +12,9 @@ albedo_color = Color( 0.121569, 0.615686, 0.247059, 1 )
 
 [node name="Ground" type="Spatial"]
 script = ExtResource( 1 )
-rows = 50
-
-[node name="Grass" type="Particles" parent="."]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 3.1933, 0, 0 )
-material_override = ExtResource( 2 )
-amount = 16
-explosiveness = 1.0
-local_coords = false
-process_material = ExtResource( 3 )
-draw_pass_1 = ExtResource( 4 )
 
 [node name="Surface" type="StaticBody" parent="."]
-transform = Transform( 70, 0, 0, 0, 0.05, 0, 0, 0, 200, 0, 0, 0 )
+transform = Transform( 70, 0, 0, 0, 0.05, 0, 0, 0, 200, 0, -0.1, 0 )
 collision_layer = 3
 collision_mask = 3
 

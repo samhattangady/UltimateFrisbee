@@ -57,7 +57,7 @@ func _ready():
     self.disc_calculator = load('DiscCalculator.gd').new()
     self.animation_player.get_animation('Idle').set_loop(true)
     self.animation_player.get_animation('Run').set_loop(true)
-    self.animation_player.play('Idle')
+    self.animation_player.play('Run')
     self.skeleton = self.player_model.get_node('Armature')
     self.right_hand = self.skeleton.find_bone('Wrist.R')
     self.animation_player.connect('animation_finished', self, 'handle_animation_completion')
@@ -74,10 +74,12 @@ func _physics_process(delta):
         if self.current_state == PLAYER_STATE.RUNNING:
             self.recalculate_current_velocity(delta)
             self.move_and_slide(self.current_velocity, Vector3(0, -1, 0))
-        if self.current_velocity.length() > 0.0:
+        if self.current_velocity.length() > 1.0:
             var blend_amount = self.current_velocity.length() / self.max_speed
             self.animation_tree.set('parameters/Idle-Run/blend_amount', blend_amount)
-            self.animation_tree.active = true
+            # FIXME (25 Jun 2019 sam): The blending is no longer working with the new model
+            self.animation_player.play('Run')
+            # self.animation_tree.active = true
             if self.playing_catch_anim:
                 self.animation_player.play('Catching')
         else:
@@ -130,6 +132,7 @@ func catch_disc():
     self.disc.disc_is_reached()
     self.current_velocity = Vector3(0, 0, 0)
     # self.animation_player.play('Catching')
+    self.animation_player.play('Idle')
     self.emit_signal('disc_is_caught', self)
     # self.emit_signal('thrower_arm_position', self.get_wrist_position())
 
