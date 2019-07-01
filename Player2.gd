@@ -230,6 +230,10 @@ func calculate_attack_point(curve, throw_details):
     # also requires us to constrain running to directions with y=0, and also figure
     # out how to add jumping into this calculation, both with regards to skying and
     # laying out.
+    # FIXME (26 Jun 2019 sam): There is a problem. Sometimes, the players just wait
+    # in their position rather than actually attacking the disc. So they run to some
+    # point later in the disc path, and just wait there instead of running to the
+    # disc. Need to fix that as well.
     var number_of_samples = 100
     var best_point = -1
     var best_time_difference = pow(10, 10)

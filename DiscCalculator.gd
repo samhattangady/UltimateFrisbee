@@ -20,13 +20,3 @@ func get_disc_offset(time, total_throw_time, max_speed, min_speed):
         # exp_component = 0.5 + 0.5*pow((1-2*progress), 2)
         exp_component = 0.5 + 0.5*(sin(angle)+1)
     return (lin_ratio * progress) + (exp_ratio * exp_component)
-
-func get_next_disc_offset(offset, delta, total_throw_time, max_speed, min_speed):
-    var time = get_disc_time(offset, total_throw_time, max_speed, min_speed)
-    var new_offset = get_disc_offset(time+delta, total_throw_time, max_speed, min_speed)
-    return new_offset
-
-func get_disc_time(offset, total_throw_time, max_speed, min_speed):
-    # This function returns the inverse of `get_disc_offset`
-    # TODO (24 May 2019 sam): Implement inverse of get_disc_offset
-    pass

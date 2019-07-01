@@ -9,6 +9,7 @@ var pan_start = Vector2(0, 0)
 var throw_start_time = 0
 var accepting_input = true
 var pause_button
+var restart_button
 var buttons = []
 var pause_state
 
@@ -18,6 +19,7 @@ signal pan_camera(pan_start, pan_end, origin)
 signal mark_point(point)
 signal tap_location(point)
 signal set_pause_state(state)
+signal restart()
 
 var disc_points = Vector2(0, 0)
 var throw_radius = 100
@@ -28,8 +30,11 @@ func _ready():
     self.calculate_disc_points()
     self.pause_state = false
     self.pause_button = self.get_node('PauseButton')
+    self.restart_button = self.get_node('RestartButton')
     self.buttons.append(self.pause_button)
+    self.buttons.append(self.restart_button)
     self.pause_button.connect('button_up', self, 'handle_pause_button')
+    self.restart_button.connect('button_up', self, 'handle_restart_button')
 
 func camera_movement_completed():
     self.allow_input()
@@ -55,6 +60,9 @@ func handle_pause_button():
     self.pause_state = !self.pause_state
     print('game paused: ', self.pause_state)
     self.emit_signal('set_pause_state', self.pause_state)
+
+func handle_restart_button():
+    self.emit_signal('restart')
 
 func _input(event):
     if !self.accepting_input:
@@ -190,7 +198,8 @@ func calculate_disc_points():
 
 # TODO (23 May 2019 sam): Add a feature so that if the person is throwing and they
 # are on the same pixel for n amount of time, the throw is considered complete, and
-# the disc is thrown.
+# the disc is thrown. UPDATE (Jul 01 2019 sam): I think this has been sorted by
+# creating the multiple animations?
 
 # TODO (23 May 2019 sam): Calculate speed of throw using path here itself, and send
 # that to Disc. Currently, a fast and blady throw is coming out a little slower than

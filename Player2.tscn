@@ -3,19 +3,19 @@
 [ext_resource path="res://Player2.gd" type="Script" id=1]
 [ext_resource path="res://PlayerModel.tscn" type="PackedScene" id=2]
 
-[sub_resource type="CapsuleShape" id=8]
+[sub_resource type="CapsuleShape" id=1]
 
-[sub_resource type="CylinderMesh" id=9]
+[sub_resource type="CylinderMesh" id=2]
 
-[sub_resource type="SpatialMaterial" id=10]
+[sub_resource type="SpatialMaterial" id=3]
 flags_transparent = true
 albedo_color = Color( 1, 0.960784, 0.4, 0.470588 )
 
-[sub_resource type="BoxShape" id=11]
+[sub_resource type="BoxShape" id=4]
 
-[sub_resource type="CubeMesh" id=12]
+[sub_resource type="CubeMesh" id=5]
 
-[sub_resource type="SpatialMaterial" id=13]
+[sub_resource type="SpatialMaterial" id=6]
 flags_transparent = true
 albedo_color = Color( 0.0705882, 0.160784, 0.427451, 0.490196 )
 
@@ -25,24 +25,24 @@ script = ExtResource( 1 )
 
 [node name="CollisionShape" type="CollisionShape" parent="."]
 transform = Transform( 0.8, 0, 0, 0, -2.18557e-08, -2.34, 0, 0.5, -1.02285e-07, 0, 3.54704, 0 )
-shape = SubResource( 8 )
+shape = SubResource( 1 )
 
 [node name="SelectedMarker" type="MeshInstance" parent="."]
 transform = Transform( 1, 0, 0, 0, 0.01, 0, 0, 0, 1, 0, 0, 0 )
 visible = false
 cast_shadow = 0
-mesh = SubResource( 9 )
-material/0 = SubResource( 10 )
+mesh = SubResource( 2 )
+material/0 = SubResource( 3 )
 
 [node name="CatchingArea" type="Area" parent="."]
 
 [node name="CollisionShape" type="CollisionShape" parent="CatchingArea"]
 transform = Transform( 1.85, 0, 0, 0, -8.65485e-08, -3.47, 0, 1.98, -1.51679e-07, 0, 3.42, 1.07 )
-shape = SubResource( 11 )
+shape = SubResource( 4 )
 
 [node name="MeshInstance" type="MeshInstance" parent="CatchingArea/CollisionShape"]
 visible = false
-mesh = SubResource( 12 )
-material/0 = SubResource( 13 )
+mesh = SubResource( 5 )
+material/0 = SubResource( 6 )
 
 [node name="PlayerModel" parent="." instance=ExtResource( 2 )]

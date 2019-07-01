@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=2]
+[gd_scene load_steps=9 format=2]
 
 [ext_resource path="res://PlayingField.gd" type="Script" id=1]
 [ext_resource path="res://ThrowCanvas.tscn" type="PackedScene" id=2]
@@ -7,6 +7,9 @@
 [ext_resource path="res://WorldDebug.tscn" type="PackedScene" id=5]
 [ext_resource path="res://WorldDebug.gd" type="Script" id=6]
 [ext_resource path="res://ScreenDebug.tscn" type="PackedScene" id=7]
+
+[sub_resource type="Environment" id=1]
+fog_depth_begin = 1.0
 
 [node name="PlayingField" type="Spatial"]
 script = ExtResource( 1 )
@@ -17,15 +20,24 @@ script = ExtResource( 1 )
 
 [node name="GameCamera" parent="." instance=ExtResource( 4 )]
 transform = Transform( 1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 30, 15 )
+keep_aspect = 0
+environment = SubResource( 1 )
 
 [node name="OmniLight" type="DirectionalLight" parent="."]
-transform = Transform( 1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 38.372, 1, 1.503 )
-light_color = Color( 0.74902, 0.854902, 1, 1 )
-light_specular = 1.0
+transform = Transform( 1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 44.0653, 42.6867, 1.503 )
+light_specular = 0.0
 light_bake_mode = 2
 shadow_enabled = true
+shadow_bias = 1.0
 
 [node name="WorldDebug" parent="." instance=ExtResource( 5 )]
 script = ExtResource( 6 )
 
 [node name="Debug" parent="." instance=ExtResource( 7 )]
+
+[node name="SpotLight" type="SpotLight" parent="."]
+transform = Transform( 1, 0, 0, 0, -0.227634, 0.973747, 0, -0.973747, -0.227634, 0, 75.3957, 0 )
+visible = false
+light_energy = 1.74
+shadow_enabled = true
+spot_range = 4096.0

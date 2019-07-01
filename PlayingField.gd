@@ -21,6 +21,7 @@ func _ready():
     self.players_controller.set_game_camera(self.game_camera)
     self.players_controller.set_disc(self.disc)
     self.input_controls.connect('set_pause_state', self.disc, 'set_pause_state')
+    self.input_controls.connect('restart', self.players_controller, 'set_positions')
     self.input_controls.connect('pan_start', self.game_camera, 'pan_start')
     self.input_controls.connect('pan_camera', self.game_camera, 'pan_camera')
     self.input_controls.connect('throw', self.disc, 'execute_throw')
@@ -48,6 +49,3 @@ func connect_player_signals():
 func check_player_selected():
     pass
 
-# TODO (28 May 2019 sam): Godot keeps throwing up errors for a deleted scene and script
-# called `Test.gd`. This clogs up the output, and is really annoying. Figure out how to
-# let Godot know that the scene and script have been deleted.

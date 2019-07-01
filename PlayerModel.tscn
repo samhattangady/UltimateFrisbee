@@ -3,7 +3,7 @@
 [ext_resource path="res://assets/scoober.glb" type="PackedScene" id=1]
 
 [sub_resource type="SpatialMaterial" id=1]
-params_specular_mode = 3
+albedo_color = Color( 0.552941, 0.411765, 0.141176, 1 )
 
 [sub_resource type="AnimationNodeBlend2" id=2]
 
@@ -34,9 +34,6 @@ editor/display_folded = true
 
 [node name="Armature3" parent="." index="2"]
 editor/display_folded = true
-
-[node name="Shoes" parent="Armature3" index="0"]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -0.665303, 0.0881049, -0.000726328 )
 
 [node name="AnimationTree" type="AnimationTree" parent="." index="3"]
 tree_root = SubResource( 5 )

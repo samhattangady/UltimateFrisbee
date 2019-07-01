@@ -11,3 +11,9 @@ margin_left = 13.0
 margin_top = 13.0
 margin_right = 90.0
 margin_bottom = 85.0
+
+[node name="RestartButton" type="Button" parent="."]
+margin_left = 114.0
+margin_top = 13.0
+margin_right = 197.0
+margin_bottom = 86.0
