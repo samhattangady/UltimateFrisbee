@@ -11,8 +11,8 @@ var body
 
 var debug_previous_throw = {}
 
-export var max_throw_speed = 50.0
-export var min_throw_speed = 12.0
+export var max_throw_speed = 20.0
+export var min_throw_speed = 20.0
 
 export var max_throw_distance = 80.0
 export var min_throw_distance = 15.0
@@ -38,6 +38,8 @@ const MAX_OI_CURVE = 0.5
 # too much, makes throws unintuitive. This reduces that and brings it
 # back under control
 const X_DISP_FACTOR = 0.8
+
+const MAX_HEIGHT_FACTOR = 2.0
 
 var DISC_CALCULATOR
 
@@ -171,7 +173,7 @@ func calculate_oi_point(dist, x_disp, start, end):
     # We then do cos45 as I am picturing the disc to be thrown like that
     # Then we see what ratio of that our throw is. The idea is
     # that more oi is more height
-    var max_height = (dist/2) * cos(deg2rad(45))
+    var max_height = (dist/2) * cos(deg2rad(45)) * MAX_HEIGHT_FACTOR
     var oiy = lerp(0, max_height, abs(x_disp)/dist*MAX_OI_CURVE)
     oiy += (self.translation.y+end.y) / 2
     # We want some randomness in how the exact curve of the throw looks

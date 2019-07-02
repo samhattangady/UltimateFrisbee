@@ -1,7 +1,7 @@
 [gd_scene load_steps=8 format=2]
 
 [ext_resource path="res://PlayingField.gd" type="Script" id=1]
-[ext_resource path="res://ThrowCanvas.tscn" type="PackedScene" id=2]
+[ext_resource path="res://InputControls.tscn" type="PackedScene" id=2]
 [ext_resource path="res://FrisbeeThings.tscn" type="PackedScene" id=3]
 [ext_resource path="res://GameCamera.tscn" type="PackedScene" id=4]
 [ext_resource path="res://WorldDebug.tscn" type="PackedScene" id=5]
@@ -16,7 +16,7 @@ script = ExtResource( 1 )
 [node name="FrisbeeThings" parent="." instance=ExtResource( 3 )]
 
 [node name="GameCamera" parent="." instance=ExtResource( 4 )]
-transform = Transform( 1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 30, 15 )
+transform = Transform( 1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 18.8, 15 )
 keep_aspect = 0
 
 [node name="OmniLight" type="DirectionalLight" parent="."]

@@ -25,7 +25,7 @@ func set_positions():
     return player
 
 func n_players():
-    var player_scene = preload('res://Player2.tscn')
+    var player_scene = preload('res://Player.tscn')
     for i in range(number_of_players):
         var p = player_scene.instance()
         p.translation = Vector3(0.0, 0.0, -20.0*i)
@@ -37,7 +37,7 @@ func n_players():
 
 func create_players():
     # TODO (01 Jul 2019 sam): Clean up now that it is all simpler
-    var player_scene = preload('res://Player2.tscn')
+    var player_scene = preload('res://Player.tscn')
     var back_1 = player_scene.instance()
     back_1.set_debug_name('back_2')
     self.add_child(back_1)
@@ -161,8 +161,6 @@ func resolve_bids():
             best_time = time
             best_player = player
     best_player.attack_disc(self.player_attack_bids[best_player])
-    print(bidders)
-    print(best_player.debug_name, ' has best bid')
     self.player_attack_bids = {}
 
 

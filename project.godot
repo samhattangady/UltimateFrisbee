@@ -32,4 +32,7 @@ window/handheld/orientation="portrait"
 
 [rendering]
 
+quality/driver/fallback_to_gles2=true
+quality/intended_usage/framebuffer_allocation.mobile=2
+quality/depth/hdr.mobile=true
 environment/default_environment="res://default_env.tres"

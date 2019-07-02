@@ -6,6 +6,6 @@
 albedo_color = Color( 0.690196, 0.113725, 0.113725, 1 )
 
 [node name="TrailMarker" type="MeshInstance"]
-transform = Transform( 0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.01, 0, 0, 0 )
+transform = Transform( 0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 0, 0, 0 )
 mesh = SubResource( 1 )
 material/0 = SubResource( 2 )

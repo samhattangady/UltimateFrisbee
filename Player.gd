@@ -1,17 +1,17 @@
 extends KinematicBody
 
 export var max_speed = 20
-export var acceleration = 50
-export var deceleration = 1
+export var acceleration = 50.0
+export var deceleration = 50.0
 export var MAX_ANGLE_WITHOUT_STOPPING = 60
-export var AT_DESTINATION_DISTANCE = 1.5
+export var AT_DESTINATION_DISTANCE = 0.5
 export var DISC_CATCHING_DISTANCE = 1.0
 export var TIME_DIFFERENCE_TO_CATCH = 0.2
 
 var CLAP_CATCH_ANIMATION_LENGTH = 1.0
 
 var current_direction = Vector3(1, 0, 0)
-var current_velocity = Vector3(-1, 0, 0)
+var current_velocity = Vector3(0, 0, 0)
 var desired_direction = Vector3(0, 0, -1)
 var desired_destination = Vector3(0, 0, -1)
 
@@ -50,6 +50,9 @@ signal throw_animation_complete()
 signal disc_is_caught(player)
 signal try_to_catch_disc(player)
 signal bid_to_attack_disc(player, attack_point)
+
+signal debug_point(disc_pos, debug_string)
+signal clear_debug_points()
 
 func _ready():
     self.player_model = self.get_node('PlayerModel')
@@ -129,10 +132,12 @@ func try_to_catch_disc():
 
 func catch_disc():
     # !AnimationHook Catching the disc
+    self.current_velocity = Vector3(0, 0, 0)
+    self.animation_player.play('Idle')
+    self.current_state = PLAYER_STATE.IDLE
     self.set_deselected()
     self.assign_disc_possession()
     self.disc.disc_is_reached()
-    self.current_velocity = Vector3(0, 0, 0)
     # self.animation_player.play('Catching')
     self.animation_player.play('Idle')
     self.emit_signal('disc_is_caught', self)
@@ -156,7 +161,7 @@ func recalculate_current_velocity(delta):
     else:
         # !AnimationHook - Chopstop / sliding
         # FIXME (21 Jun 2019 sam): Deceleration doesn't seem to be working correctly
-        self.current_velocity -= self.current_direction*self.deceleration * delta
+        self.current_velocity -= self.current_direction*self.deceleration*delta
         if self.current_velocity.normalized() != self.current_direction:
             self.current_velocity = Vector3(0, 0, 0)
             self.run_to_world_point(self.desired_destination)
@@ -221,7 +226,9 @@ func disc_is_thrown(curve, throw_details):
     if self.current_state == PLAYER_STATE.THROWN or self.current_state == PLAYER_STATE.THROWING or self.current_state == PLAYER_STATE.WITH_DISC:
         return
     var attack_point = self.calculate_attack_point(curve, throw_details)
-    print(self.debug_name, ': ', attack_point)
+    # TODO: If noone is bidding, we still want someone to run toward the falling disc
+    # Also, we need to consider once there is defence, we may want multiple people
+    # attacking the disc at the same time.
     if self.current_state == PLAYER_STATE.RUNNING or attack_point.time_difference < self.TIME_DIFFERENCE_TO_CATCH:
         self.emit_signal('bid_to_attack_disc', self, attack_point)
 
