@@ -22,7 +22,7 @@ signal set_pause_state(state)
 signal restart()
 
 var disc_points = Vector2(0, 0)
-var throw_radius = 100
+var throw_radius = 200
 var throw_radius_buffer = 40
 var draw_throw_circle = true
 

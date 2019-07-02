@@ -45,6 +45,7 @@ func connect_player_signals():
         p.connect('disc_is_caught', self.players_controller, 'disc_is_caught')
         p.connect('thrower_arm_position', self.disc, 'attach_to_wrist')
         p.connect('try_to_catch_disc', self.players_controller, 'player_trying_to_catch_disc')
+        p.connect('bid_to_attack_disc', self.players_controller, 'players_bidding_to_attack_disc')
 
 func check_player_selected():
     pass

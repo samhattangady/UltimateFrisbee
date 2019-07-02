@@ -6,15 +6,19 @@ var game_camera
 var selected_player
 var disc
 var players = []
+var player_attack_bids = {}
 var player_with_disc
 var PLAYER_PIXEL_RADIUS = 25
-var HEX_SPACING = 10.0
+var HEX_SPACING = 10.02
 
 func _ready():
     self.create_players()
     var player = self.hex_with_back_2()
     player.assign_disc_possession()
     self.player_with_disc = player
+
+func _process(delta):
+    self.resolve_bids()
 
 func set_positions():
     var player = self.hex_with_back_2()
@@ -35,11 +39,11 @@ func create_players():
     # TODO (01 Jul 2019 sam): Clean up now that it is all simpler
     var player_scene = preload('res://Player2.tscn')
     var back_1 = player_scene.instance()
-    back_1.set_debug_name('back_1')
+    back_1.set_debug_name('back_2')
     self.add_child(back_1)
     self.players.append(back_1)
     var back_2 = player_scene.instance()
-    back_2.set_debug_name('back_2')
+    back_2.set_debug_name('back_1')
     self.add_child(back_2)
     self.players.append(back_2)
     var wing_1 = player_scene.instance()
@@ -71,7 +75,7 @@ func hex_with_back_2():
     self.players[4].translation = Vector3 (1.0*HEX_SPACING, 0.0, -1.5*HEX_SPACING)
     self.players[5].translation = Vector3 (-2.0*HEX_SPACING, 0.0, -3.0*HEX_SPACING)
     self.players[6].translation = Vector3 (0.0*HEX_SPACING, 0.0, -3.0*HEX_SPACING)
-    return self.players[0]
+    return self.players[1]
 
 func run_to_hex_with_back_2():
     # FIXME (01 Jul 2019 sam): Fails because player wiht disc is made to run?
@@ -106,14 +110,17 @@ func handle_screen_tap(point):
             current_player.set_selected()
     elif self.selected_player:
         # Then make player run to that point
-        var world_point = self.get_point_in_world(point)
+        var world_point = self.disc.get_point_in_world(point)
         if world_point:
-            self.selected_player.run_to_world_point(world_point.position)
+            self.selected_player.run_to_world_point(world_point)
 
 func player_trying_to_catch_disc(player):
     if self.player_with_disc == null:
         player.catch_disc()
         self.player_with_disc = player
+        for p in self.players:
+            if p.state_is_thrown():
+                p.set_idle()
 
 func is_player_being_selected(point):
     for player in self.players:
@@ -130,22 +137,6 @@ func deselect_all_players():
     for player in self.players:
         player.set_deselected()
 
-func get_point_in_world(position):
-    # converts point on screen to point in world
-    # TODO (08 May 2019 sam): Camera has project_position. See if it's better
-    # TODO (08 May 2019 sam): Currently saying get_parent() multiple times
-    # See if there is a more elegant approach that isn't so hardcoded.
-    # TODO (22 May 2019 sam): This is a very commonly used function. Figure out
-    # how it can be used in different places without having to got through all
-    # this copy-pasting
-    var start_point = self.game_camera.project_ray_origin(position)
-    # TODO (15 May 2019 sam): The 10000 marked below is hardcoded. It is meant
-    # to ensure that the ray is long enough to intersect with the ground in all
-    # cases. See if there is a better way to do this.
-    var end_point = start_point + 10000*self.game_camera.project_ray_normal(position)
-    var point = get_world().direct_space_state.intersect_ray(start_point, end_point)
-    return point
-
 func start_throw(throw_data):
     if self.player_with_disc:
         self.player_with_disc.start_throw_animation(throw_data)
@@ -153,6 +144,27 @@ func start_throw(throw_data):
 
 func disc_is_caught(player):
     self.player_with_disc = player
+
+func players_bidding_to_attack_disc(player, attack_point):
+    self.player_attack_bids[player] = attack_point
+
+func resolve_bids():
+    if self.player_attack_bids.size() == 0:
+        return
+    var bidders = 'Bidders: '
+    var best_time = pow(10, 10)
+    var best_player = null
+    for player in self.player_attack_bids.keys():
+        bidders += ', ' + player.debug_name
+        var time = self.player_attack_bids[player].time_to_catch
+        if time < best_time:
+            best_time = time
+            best_player = player
+    best_player.attack_disc(self.player_attack_bids[best_player])
+    print(bidders)
+    print(best_player.debug_name, ' has best bid')
+    self.player_attack_bids = {}
+
 
 # TODO (31 May 2019 sam): So there is a problem with using direct pixel values. Pixel
 # has very high hdpi or whatever, so the pixel ratios are terribly small, and unclickable# Need to see how to fix that.

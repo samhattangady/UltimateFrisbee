@@ -10,14 +10,20 @@
 [sub_resource type="SpatialMaterial" id=3]
 flags_transparent = true
 albedo_color = Color( 1, 0.960784, 0.4, 0.470588 )
+emission_enabled = true
+emission = Color( 1, 1, 1, 1 )
+emission_energy = 10.31
+emission_operator = 0
+emission_on_uv2 = false
 
 [sub_resource type="BoxShape" id=4]
+extents = Vector3( 2.43981, 4.58397, 3.00284 )
 
 [sub_resource type="CubeMesh" id=5]
 
 [sub_resource type="SpatialMaterial" id=6]
 flags_transparent = true
-albedo_color = Color( 0.0705882, 0.160784, 0.427451, 0.490196 )
+albedo_color = Color( 1, 0, 0, 0.498039 )
 
 [node name="Player2" type="KinematicBody"]
 transform = Transform( -1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, 0 )
@@ -28,7 +34,7 @@ transform = Transform( 0.8, 0, 0, 0, -2.18557e-08, -2.34, 0, 0.5, -1.02285e-07, 
 shape = SubResource( 1 )
 
 [node name="SelectedMarker" type="MeshInstance" parent="."]
-transform = Transform( 1, 0, 0, 0, 0.01, 0, 0, 0, 1, 0, 0, 0 )
+transform = Transform( 1, 0, 0, 0, 0.01, 0, 0, 0, 1, -1.86302e-08, 0, 0.213104 )
 visible = false
 cast_shadow = 0
 mesh = SubResource( 2 )
@@ -37,10 +43,11 @@ material/0 = SubResource( 3 )
 [node name="CatchingArea" type="Area" parent="."]
 
 [node name="CollisionShape" type="CollisionShape" parent="CatchingArea"]
-transform = Transform( 1.85, 0, 0, 0, -8.65485e-08, -3.47, 0, 1.98, -1.51679e-07, 0, 3.42, 1.07 )
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.439, 1.707 )
 shape = SubResource( 4 )
 
-[node name="MeshInstance" type="MeshInstance" parent="CatchingArea/CollisionShape"]
+[node name="MeshInstance" type="MeshInstance" parent="CatchingArea"]
+transform = Transform( 2.4, 0, 0, 0, 4.54, 0, 0, 0, 2.94, 0, 4.5, 1.77 )
 visible = false
 mesh = SubResource( 5 )
 material/0 = SubResource( 6 )

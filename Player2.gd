@@ -6,6 +6,7 @@ export var deceleration = 1
 export var MAX_ANGLE_WITHOUT_STOPPING = 60
 export var AT_DESTINATION_DISTANCE = 1.5
 export var DISC_CATCHING_DISTANCE = 1.0
+export var TIME_DIFFERENCE_TO_CATCH = 0.2
 
 var CLAP_CATCH_ANIMATION_LENGTH = 1.0
 
@@ -48,6 +49,7 @@ signal throw_animation_complete()
 # Signal to say that they have caught the disc
 signal disc_is_caught(player)
 signal try_to_catch_disc(player)
+signal bid_to_attack_disc(player, attack_point)
 
 func _ready():
     self.player_model = self.get_node('PlayerModel')
@@ -179,6 +181,8 @@ func start_throw_animation(throw_data):
     self.animation_player.play(throw_data['throw'], -1, 1.3, false)
     self.current_state = PLAYER_STATE.THROWING
     # TODO (31 May 2019 sam): Add some sort of timer here to switch the state to idle
+    # UPDATE (Jul 01 2019 sam): I think this has been sorted by
+    # creating the multiple animations?
 
 func handle_animation_completion(anim_name):
     if anim_name == 'Forehand' or anim_name == 'Backhand':
@@ -214,10 +218,16 @@ func run_to_world_point(destination):
     self.current_state = PLAYER_STATE.RUNNING
 
 func disc_is_thrown(curve, throw_details):
+    if self.current_state == PLAYER_STATE.THROWN or self.current_state == PLAYER_STATE.THROWING or self.current_state == PLAYER_STATE.WITH_DISC:
+        return
     var attack_point = self.calculate_attack_point(curve, throw_details)
-    if self.current_state == PLAYER_STATE.RUNNING or attack_point.time_difference < 0.2:
-        self.run_to_world_point(attack_point.point)
-        self.time_remaining_to_catch = attack_point.time_to_catch
+    print(self.debug_name, ': ', attack_point)
+    if self.current_state == PLAYER_STATE.RUNNING or attack_point.time_difference < self.TIME_DIFFERENCE_TO_CATCH:
+        self.emit_signal('bid_to_attack_disc', self, attack_point)
+
+func attack_disc(attack_point):
+    self.run_to_world_point(attack_point.point)
+    self.time_remaining_to_catch = attack_point.time_to_catch
 
 func calculate_attack_point(curve, throw_details):
     # We take different points along the flight of the disc, and measure the
@@ -234,24 +244,35 @@ func calculate_attack_point(curve, throw_details):
     # in their position rather than actually attacking the disc. So they run to some
     # point later in the disc path, and just wait there instead of running to the
     # disc. Need to fix that as well.
-    var number_of_samples = 100
+    var number_of_samples = 1000
     var best_point = -1
     var best_time_difference = pow(10, 10)
     var time_to_catch = 0
     for i in range(number_of_samples):
         var time_sample = (i+1) * throw_details['time'] / number_of_samples
         var offset_sample = self.disc_calculator.get_disc_offset(time_sample, throw_details['time'], throw_details['max_speed'], throw_details['min_speed'])
-        var sample_point = curve.interpolate_baked(offset_sample * curve.get_baked_length())
-        # Clamp point to ground
-        sample_point.y = 0.0
-        var time_to_point = self.get_time_to_point(sample_point, self.translation, self.current_direction, self.current_velocity)
+        var disc_pos = curve.interpolate_baked(offset_sample * curve.get_baked_length())
+        if not self.catchable_at_point(disc_pos):
+            continue
+        var catching_point = disc_pos
+        # Clamp to ground
+        catching_point.y = 0.0
+        var time_to_point = self.get_time_to_point(catching_point, self.translation, self.current_direction, self.current_velocity)
         if abs(time_to_point - time_sample) < best_time_difference:
             best_time_difference = abs(time_to_point-time_sample)
-            best_point = sample_point
+            best_point = catching_point
             time_to_catch = time_sample
     return {'point': best_point,
                'time_difference': best_time_difference,
                'time_to_catch': time_to_catch}
+
+func catchable_at_point(disc_pos):
+    # Currently on checks altitude of disc and whether that's catchable.
+    # TODO (01 Jul 2019 sam): owner_id, shape_id currently hardcoded.
+    # NOTE (01 Jul 2019 sam): get_extents gets half_extents, which is some random
+    # confusing nonsense. BUT, all I need is the y, so I'm okay for now
+    var highest_catchable_point = self.catching_area.shape_owner_get_shape(0, 0).get_extents().y * 2
+    return highest_catchable_point > disc_pos.y
 
 func get_time_to_point(point, pos, dir, vel):
     # Get the time it would take to move to a certain point
@@ -269,19 +290,19 @@ func get_time_to_point(point, pos, dir, vel):
         var time_to_stop = (vel.length()) / self.deceleration
         var distance_to_stop = (-pow(vel.length(), 2)) / (2*self.deceleration)
         pos += dir*(distance_to_stop)
-        dir = (point-pos).normalized()
+        dir = direction_to_point
         vel = Vector3(0, 0, 0)
         change_of_angle = abs(rad2deg(dir.angle_to(direction_to_point)))
         total_time += time_to_stop
     if change_of_angle <= MAX_ANGLE_WITHOUT_STOPPING:
         vel = vel.project(direction_to_point)
+        dir = direction_to_point
     # State 2: Accelerating
     if vel.length() < self.max_speed:
         # We need to calculate the time and distance to max_speed
         var time_to_max = (self.max_speed-vel.length()) / self.acceleration
         var distance_to_max = (pow(self.max_speed, 2) - pow(vel.length(), 2)) / (2*self.acceleration)
         pos += direction_to_point*(distance_to_max)
-        dir = direction_to_point
         vel = self.max_speed*dir
         total_time += time_to_max
     # State 3: At max speed. We don't need any checks at this point
@@ -305,6 +326,9 @@ func set_debug_name(name):
 
 func get_debug_name():
     return self.debug_name
+
+func state_is_thrown():
+    return self.current_state == PLAYER_STATE.THROWN
 
 # FIXME (24 Jun 2019 sam): There is a bug with player movement. In hex when the first
 # pass is being made to the forehand side, that player does not move to collect the

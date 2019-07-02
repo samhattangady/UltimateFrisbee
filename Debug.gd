@@ -5,7 +5,7 @@ var players_controller
 var player_labels
 var game_camera
 
-var debug = false
+var debug = true
 
 func _ready():
     self.player_labels = self.get_node('PlayerLabels')
