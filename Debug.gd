@@ -20,7 +20,7 @@ func _physics_process(delta):
         return
     for child in self.player_labels.get_children():
         self.player_labels.remove_child(child)
-    for player in self.players_controller.players:
+    for player in self.players_controller.all_players:
         var l = Label.new()
         l.text = player.get_debug_name()
         l.rect_position = self.game_camera.unproject_position(player.translation+Vector3(0,2,0))

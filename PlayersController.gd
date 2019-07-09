@@ -5,15 +5,20 @@ export var number_of_players = 2
 var game_camera
 var selected_player
 var disc
-var players = []
+var player_scene
+var offence_players = []
+var defence_players = []
+var all_players = []
 var player_attack_bids = {}
 var player_with_disc
 var PLAYER_PIXEL_RADIUS = 25
 var HEX_SPACING = 10.02
 
 func _ready():
-    self.create_players()
-    var player = self.hex_with_back_2()
+    self.player_scene = preload('res://Player.tscn')
+    self.create_hex_players()
+    self.create_defence_players()
+    var player = self.hex_with_back_1()
     player.assign_disc_possession()
     self.player_with_disc = player
 
@@ -21,79 +26,60 @@ func _process(delta):
     self.resolve_bids()
 
 func set_positions():
-    var player = self.hex_with_back_2()
+    var player = self.hex_with_back_1()
     return player
 
-func n_players():
-    var player_scene = preload('res://Player.tscn')
-    for i in range(number_of_players):
-        var p = player_scene.instance()
-        p.translation = Vector3(0.0, 0.0, -20.0*i)
+func create_hex_players():
+    var player_names = ['back_2', 'back_1', 'wing_1', 'hat', 'wing_2', 'front_1', 'front_2']
+    for name in player_names:
+        var p = self.player_scene.instance()
         self.add_child(p)
-        self.players.append(p)
-        if i == 0:
-            p.assign_disc_possession()
-            self.player_with_disc = p
+        p.set_as_offence()
+        p.set_debug_name(name)
+        self.offence_players.append(p)
+        self.all_players.append(p)
 
-func create_players():
-    # TODO (01 Jul 2019 sam): Clean up now that it is all simpler
-    var player_scene = preload('res://Player.tscn')
-    var back_1 = player_scene.instance()
-    back_1.set_debug_name('back_2')
-    self.add_child(back_1)
-    self.players.append(back_1)
-    var back_2 = player_scene.instance()
-    back_2.set_debug_name('back_1')
-    self.add_child(back_2)
-    self.players.append(back_2)
-    var wing_1 = player_scene.instance()
-    wing_1.set_debug_name('wing_1')
-    self.add_child(wing_1)
-    self.players.append(wing_1)
-    var hat = player_scene.instance()
-    hat.set_debug_name('hat')
-    self.add_child(hat)
-    self.players.append(hat)
-    var wing_2 = player_scene.instance()
-    wing_2.set_debug_name('wing_2')
-    self.add_child(wing_2)
-    self.players.append(wing_2)
-    var front_1 = player_scene.instance()
-    front_1.set_debug_name('front_1')
-    self.add_child(front_1)
-    self.players.append(front_1)
-    var front_2 = player_scene.instance()
-    front_2.set_debug_name('front_2')
-    self.add_child(front_2)
-    self.players.append(front_2)
+func create_defence_players():
+    var p = self.player_scene.instance()
+    self.add_child(p)
+    p.set_as_defence()
+    p.set_debug_name('defence')
+    p.translation = Vector3(3, 0, -3)
+    self.defence_players.append(p)
+    self.all_players.append(p)
 
-func hex_with_back_2():
-    self.players[0].translation = Vector3 (0.0, 0.0, 0.0)
-    self.players[1].translation = Vector3 (-2.0*HEX_SPACING, 0.0, -0.0*HEX_SPACING)
-    self.players[2].translation = Vector3 (-3.0*HEX_SPACING, 0.0, -1.5*HEX_SPACING)
-    self.players[3].translation = Vector3 (-1.0*HEX_SPACING, 0.0, -1.5*HEX_SPACING)
-    self.players[4].translation = Vector3 (1.0*HEX_SPACING, 0.0, -1.5*HEX_SPACING)
-    self.players[5].translation = Vector3 (-2.0*HEX_SPACING, 0.0, -3.0*HEX_SPACING)
-    self.players[6].translation = Vector3 (0.0*HEX_SPACING, 0.0, -3.0*HEX_SPACING)
-    return self.players[1]
+
+func hex_with_back_1():
+    var positions = [
+        Vector3(0.0, 0.0, 0.0),
+        Vector3(-2.0*HEX_SPACING, 0.0, -0.0*HEX_SPACING),
+        Vector3(-3.0*HEX_SPACING, 0.0, -1.5*HEX_SPACING),
+        Vector3(-1.0*HEX_SPACING, 0.0, -1.5*HEX_SPACING),
+        Vector3(1.0*HEX_SPACING, 0.0, -1.5*HEX_SPACING),
+        Vector3(-2.0*HEX_SPACING, 0.0, -3.0*HEX_SPACING),
+        Vector3(0.0*HEX_SPACING, 0.0, -3.0*HEX_SPACING)
+    ]
+    for i in range(len(positions)):
+        self.offence_players[i].translation = positions[i]
+    return self.offence_players[1]
 
 func run_to_hex_with_back_2():
     # FIXME (01 Jul 2019 sam): Fails because player wiht disc is made to run?
-    self.players[0].run_to_world_point(Vector3 (0.0, 0.0, 0.0))
-    self.players[1].run_to_world_point(Vector3 (-2.0*HEX_SPACING, 0.0, -0.0*HEX_SPACING))
-    self.players[2].run_to_world_point(Vector3 (-3.0*HEX_SPACING, 0.0, -1.5*HEX_SPACING))
-    self.players[3].run_to_world_point(Vector3 (-1.0*HEX_SPACING, 0.0, -1.5*HEX_SPACING))
-    self.players[4].run_to_world_point(Vector3 (1.0*HEX_SPACING, 0.0, -1.5*HEX_SPACING))
-    self.players[5].run_to_world_point(Vector3 (-2.0*HEX_SPACING, 0.0, -3.0*HEX_SPACING))
-    self.players[6].run_to_world_point(Vector3 (0.0*HEX_SPACING, 0.0, -3.0*HEX_SPACING))
-    return self.players[0]
+    self.offence_players[0].run_to_world_point(Vector3 (0.0, 0.0, 0.0))
+    self.offence_players[1].run_to_world_point(Vector3 (-2.0*HEX_SPACING, 0.0, -0.0*HEX_SPACING))
+    self.offence_players[2].run_to_world_point(Vector3 (-3.0*HEX_SPACING, 0.0, -1.5*HEX_SPACING))
+    self.offence_players[3].run_to_world_point(Vector3 (-1.0*HEX_SPACING, 0.0, -1.5*HEX_SPACING))
+    self.offence_players[4].run_to_world_point(Vector3 (1.0*HEX_SPACING, 0.0, -1.5*HEX_SPACING))
+    self.offence_players[5].run_to_world_point(Vector3 (-2.0*HEX_SPACING, 0.0, -3.0*HEX_SPACING))
+    self.offence_players[6].run_to_world_point(Vector3 (0.0*HEX_SPACING, 0.0, -3.0*HEX_SPACING))
+    return self.offence_players[0]
 
 func set_game_camera(camera):
     self.game_camera = camera
 
 func set_disc(disc):
     self.disc = disc
-    for player in self.players:
+    for player in self.all_players:
         player.set_disc(disc)
 
 func handle_screen_tap(point):
@@ -118,12 +104,12 @@ func player_trying_to_catch_disc(player):
     if self.player_with_disc == null:
         player.catch_disc()
         self.player_with_disc = player
-        for p in self.players:
+        for p in self.offence_players:
             if p.state_is_thrown():
                 p.set_idle()
 
 func is_player_being_selected(point):
-    for player in self.players:
+    for player in self.offence_players:
         # TODO (30 May 2019 sam): If there are 2 players very close to each other
         # this will always select the one who was generated first.
         # TODO (30 May 2019 sam): Select players based on the translation of their
@@ -134,7 +120,7 @@ func is_player_being_selected(point):
     return null
 
 func deselect_all_players():
-    for player in self.players:
+    for player in self.offence_players:
         player.set_deselected()
 
 func start_throw(throw_data):

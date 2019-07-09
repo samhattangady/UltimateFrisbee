@@ -38,6 +38,8 @@ var catching_area
 var debug_name
 var time_remaining_to_catch
 var playing_catch_anim = false
+var offence_flag
+var shirt_material
 
 var debug_starting_time
 var debug=true
@@ -102,7 +104,6 @@ func _physics_process(delta):
                 # TODO (19 Jun 2019 sam): Add the catching state to player states
                 # self.playing_catch_anim = true
                 # self.animation_player.play('Catching', -1, 1.0, false)
-
 
 func get_wrist_position():
     # TODO (18 Jun 2019 sam): We need to add rotation aspect here I think
@@ -247,10 +248,6 @@ func calculate_attack_point(curve, throw_details):
     # also requires us to constrain running to directions with y=0, and also figure
     # out how to add jumping into this calculation, both with regards to skying and
     # laying out.
-    # FIXME (26 Jun 2019 sam): There is a problem. Sometimes, the players just wait
-    # in their position rather than actually attacking the disc. So they run to some
-    # point later in the disc path, and just wait there instead of running to the
-    # disc. Need to fix that as well.
     var number_of_samples = 1000
     var best_point = -1
     var best_time_difference = pow(10, 10)
@@ -337,6 +334,20 @@ func get_debug_name():
 func state_is_thrown():
     return self.current_state == PLAYER_STATE.THROWN
 
-# FIXME (24 Jun 2019 sam): There is a bug with player movement. In hex when the first
-# pass is being made to the forehand side, that player does not move to collect the
-# disc.
+func set_as_offence():
+    # set color of offence jersey
+    self.offence_flag = true
+
+func set_as_defence():
+    # set color of defence jersey
+    self.player_model.set_yellow()
+    self.offence_flag = false
+
+func is_offence():
+    return self.offence_flag
+
+func is_defence():
+    return not self.offence_flag
+
+# FIXME (03 Jul 2019 sam): When a throw is made to end out of bounds, then the next
+# throws cannot be made. Some very wierd behaviour begins there. Look into it babes.

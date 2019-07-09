@@ -38,7 +38,7 @@ func _ready():
     self.game_camera.disc_position_update(self.disc.path.translation)
 
 func connect_player_signals():
-    for p in self.players_controller.players:
+    for p in self.players_controller.all_players:
         self.input_controls.connect('set_pause_state', p, 'set_pause_state')
         self.disc.connect('throw_started', p, 'disc_is_thrown')
         p.connect('throw_animation_complete', self.disc, 'start_throw_animation')
@@ -46,10 +46,6 @@ func connect_player_signals():
         p.connect('thrower_arm_position', self.disc, 'attach_to_wrist')
         p.connect('try_to_catch_disc', self.players_controller, 'player_trying_to_catch_disc')
         p.connect('bid_to_attack_disc', self.players_controller, 'players_bidding_to_attack_disc')
-    self.players_controller.players[0].connect('debug_point', self.world_debug, 'debug_point')
-    self.players_controller.players[0].connect('debug_point', self.screen_debug, 'debug_point')
-    self.players_controller.players[0].connect('clear_debug_points', self.world_debug, 'clear_debug_points')
-    self.players_controller.players[0].connect('clear_debug_points', self.screen_debug, 'clear_debug_points')
 
 func check_player_selected():
     pass
